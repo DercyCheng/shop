@@ -1,0 +1,30 @@
+{
+  "name": "user_web",
+  "host": "192.168.206.135",
+  "tags": [
+    "mxshop",
+    "bobby",
+    "user",
+    "web"
+  ],
+  "port": 8081,
+  "user_srv": {
+    "name": "user_srv"
+  },
+  "jwt": {
+    "key": "VYLDYq3&hGWjWqF$K1ih"
+  },
+  "sms": {
+    "key": "",
+    "secrect": ""
+  },
+  "redis": {
+    "host": "192.168.206.135",
+    "port": 6379,
+    "expire": 300
+  },
+  "consul": {
+    "host": "192.168.206.135",
+    "port": 8500
+  }
+}
