@@ -35,3 +35,5 @@ pkg/
 Pro/
 geektime-basic-go/
 *-fe/
+
+node_modules/

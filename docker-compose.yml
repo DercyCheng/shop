@@ -1,0 +1,275 @@
+version: '3'
+
+services:
+  # 服务发现与配置管理
+  consul:
+    image: consul:1.8
+    ports:
+      - "8500:8500"
+    volumes:
+      - consul_data:/consul/data
+
+  nacos:
+    image: nacos/nacos-server:2.0.3
+    environment:
+      - MODE=standalone
+    ports:
+      - "8848:8848"
+    volumes:
+      - nacos_data:/home/nacos/data
+    depends_on:
+      - mysql
+
+  # 数据存储
+  mysql:
+    image: mysql:8.0.32
+    container_name: mysql
+    restart: always
+    command: --default-authentication-plugin=mysql_native_password
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - mysql_data:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=123456
+      - MYSQL_DATABASE=shop
+    ports:
+      - "3306:3306"
+    networks:
+      - shop_net
+
+  redis:
+    image: redis:6.2
+    container_name: redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - shop_net
+
+  elasticsearch:
+    image: elasticsearch:7.13.2
+    environment:
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+
+  # 消息队列
+  rocketmq-namesrv:
+    image: apache/rocketmq-namesrv:4.9.2
+    ports:
+      - "9876:9876"
+    volumes:
+      - rocketmq_namesrv_data:/home/rocketmq/data
+      - rocketmq_namesrv_logs:/home/rocketmq/logs
+
+  rocketmq-broker:
+    image: apache/rocketmq-broker:4.9.2
+    depends_on:
+      - rocketmq-namesrv
+    ports:
+      - "10909:10909"
+      - "10911:10911"
+    environment:
+      - NAMESRV_ADDR=rocketmq-namesrv:9876
+    volumes:
+      - rocketmq_broker_data:/home/rocketmq/data
+      - rocketmq_broker_logs:/home/rocketmq/logs
+
+  # 分布式追踪
+  jaeger:
+    image: jaegertracing/all-in-one:1.25
+    ports:
+      - "5775:5775/udp"
+      - "6831:6831/udp"
+      - "6832:6832/udp"
+      - "5778:5778"
+      - "16686:16686"  # Web UI
+      - "14268:14268"
+      - "14250:14250"
+
+  # 微服务后端
+  # 用户服务
+  user_srv:
+    build:
+      context: ./shop_srv/user_srv
+      dockerfile: Dockerfile
+    container_name: user_srv
+    restart: always
+    depends_on:
+      - mysql
+      - consul
+      - nacos
+    volumes:
+      - ./shop_srv/user_srv/config:/app/config
+    networks:
+      - shop_net
+
+  # 商品服务
+  goods_srv:
+    build:
+      context: ./shop_srv/goods_srv
+      dockerfile: Dockerfile
+    container_name: goods_srv
+    restart: always
+    depends_on:
+      - mysql
+      - consul
+      - nacos
+      - elasticsearch
+    volumes:
+      - ./shop_srv/goods_srv/config:/app/config
+    networks:
+      - shop_net
+
+  # 库存服务
+  inventory_srv:
+    build:
+      context: ./shop_srv/inventory_srv
+      dockerfile: Dockerfile
+    container_name: inventory_srv
+    restart: always
+    depends_on:
+      - mysql
+      - redis
+      - consul
+      - nacos
+    volumes:
+      - ./shop_srv/inventory_srv/config:/app/config
+    networks:
+      - shop_net
+
+  # 订单服务
+  order_srv:
+    build:
+      context: ./shop_srv/order_srv
+      dockerfile: Dockerfile
+    container_name: order_srv
+    restart: always
+    depends_on:
+      - mysql
+      - consul
+      - nacos
+      - rocketmq-namesrv
+      - rocketmq-broker
+      - goods_srv
+      - inventory_srv
+    volumes:
+      - ./shop_srv/order_srv/config:/app/config
+    networks:
+      - shop_net
+
+  # 用户操作服务
+  userop_srv:
+    build:
+      context: ./shop_srv/userop_srv
+      dockerfile: Dockerfile
+    container_name: userop_srv
+    restart: always
+    depends_on:
+      - mysql
+      - consul
+      - nacos
+    volumes:
+      - ./shop_srv/userop_srv/config:/app/config
+    networks:
+      - shop_net
+
+  # Web API层
+  # 用户API
+  user_web:
+    build:
+      context: ./shop_api/user_web
+      dockerfile: Dockerfile
+    container_name: user_web
+    restart: always
+    ports:
+      - "8021:8021"
+    depends_on:
+      - user_srv
+      - consul
+      - nacos
+      - redis
+    volumes:
+      - ./shop_api/user_web/config:/app/config
+    networks:
+      - shop_net
+
+  # 商品API
+  goods_web:
+    build:
+      context: ./shop_api/goods_web
+      dockerfile: Dockerfile
+    container_name: goods_web
+    restart: always
+    ports:
+      - "8023:8023"
+    depends_on:
+      - goods_srv
+      - consul
+      - nacos
+    networks:
+      - shop_net
+
+  # 订单API
+  order_web:
+    build:
+      context: ./shop_api/order_web
+      dockerfile: Dockerfile
+    container_name: order_web
+    restart: always
+    ports:
+      - "8024:8024"
+    depends_on:
+      - order_srv
+      - consul
+      - nacos
+    networks:
+      - shop_net
+
+  # OSS服务API
+  oss_web:
+    build:
+      context: ./shop_api/oss_web
+      dockerfile: Dockerfile
+    container_name: oss_web
+    restart: always
+    ports:
+      - "8029:8029"
+    depends_on:
+      - consul
+      - nacos
+    networks:
+      - shop_net
+
+  # 用户操作API
+  userop_web:
+    build:
+      context: ./shop_api/userop_web
+      dockerfile: Dockerfile
+    container_name: userop_web
+    restart: always
+    ports:
+      - "8027:8027"
+    depends_on:
+      - userop_srv
+      - consul
+      - nacos
+    networks:
+      - shop_net
+
+volumes:
+  consul_data:
+  nacos_data:
+  mysql_data:
+  redis_data:
+  es_data:
+  rocketmq_namesrv_data:
+  rocketmq_namesrv_logs:
+  rocketmq_broker_data:
+  rocketmq_broker_logs:
