@@ -9,10 +9,10 @@ import (
 	"google.golang.org/grpc/health"
 	"google.golang.org/grpc/health/grpc_health_v1"
 	"nd/user_srv/global"
-	"nd/user_srv/handler"
 	"nd/user_srv/initialize"
 	"nd/user_srv/proto"
 	"nd/user_srv/utils"
+	"nd/user_srv/wire"
 	"net"
 	"os"
 	"os/signal"
@@ -62,7 +62,11 @@ func main() {
 	}
 
 	server := grpc.NewServer(opts...)
-	proto.RegisterUserServer(server, &handler.UserServer{})
+	
+	// 使用Wire进行依赖注入，创建用户处理器
+	userHandler := wire.ProvideUserHandler(global.DB)
+	proto.RegisterUserServer(server, userHandler)
+	
 	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", *IP, *Port))
 	if err != nil {
 		panic("failed to listen:" + err.Error())
@@ -94,7 +98,7 @@ func main() {
 	serviceID := fmt.Sprintf("%s", uuid.NewV4())
 	registration.ID = serviceID
 	registration.Port = *Port
-	registration.Tags = []string{"1", "bobby", "user", "srv"}
+	registration.Tags = []string{"shop", "user", "srv"}
 	registration.Address = global.ServerConfig.Host
 	registration.Check = check
 
