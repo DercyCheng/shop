@@ -60,7 +60,7 @@ def start_infrastructure():
             # Initialize database with SQL script
             print("Initializing MySQL database...")
             try:
-                with open("init.sql", "rb") as sql_file:
+                with open("./script/init.sql", "rb") as sql_file:
                     subprocess.run([
                         "docker", "exec", "-i", "mxshop-mysql", 
                         "mysql", "-uroot", "-proot"

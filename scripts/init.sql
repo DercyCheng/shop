@@ -15,3 +15,4 @@ CREATE TABLE IF NOT EXISTS `user` (
   `nickname` varchar(20) DEFAULT '',
   `birthday` datetime DEFAULT NULL,
   `gender` varchar(6) DEFAULT
+)
