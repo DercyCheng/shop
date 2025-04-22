@@ -4,9 +4,9 @@ Group：dev
 {
     "name":"user-srv",
     "host":"自己主机的IP",
-    "tags":["1","dercy","go","srv"],
+    "tags":["imooc","jzin","go","srv"],
     "mysql":{
-        "db":"shop_user_srv2",
+        "db":"mxshop_user_srv2",
         "host":"localhost",
         "port":3306,
         "user":"root",
@@ -25,9 +25,9 @@ Group：dev
 {
     "name":"userop-srv",
     "host":"自己主机的IP",
-    "tags":["1","dercy","golang","userop","srv"],
+    "tags":["imooc","jzin","golang","userop","srv"],
     "mysql":{
-        "db":"shop_userop_srv2",
+        "db":"mxshop_userop_srv2",
         "host":"localhost",
         "port":3306,
         "user":"root",
@@ -46,9 +46,9 @@ Group：dev
 {
     "name":"goods-srv",
     "host":"自己主机的IP",
-    "tags":["1","dercy","goods","srv"],
+    "tags":["imooc","jzin","goods","srv"],
     "mysql":{
-        "db":"shop_goods_srv2",
+        "db":"mxshop_goods_srv2",
         "host":"localhost",
         "port":3306,
         "user":"root",
@@ -71,9 +71,9 @@ Group：dev
 {
     "name":"order-srv",
     "host":"自己主机的IP",
-    "tags":["1","dercy","go","order","srv"],
+    "tags":["imooc","jzin","go","order","srv"],
     "mysql":{
-        "db":"shop_order_srv2",
+        "db":"mxshop_order_srv2",
         "host":"localhost",
         "port":3306,
         "user":"root",
@@ -92,7 +92,7 @@ Group：dev
     "jaeger": {
       "host": "192.168.10.130",
       "port": 6831,
-      "name": "shop"
+      "name": "mxshop"
     }
 }
 ```

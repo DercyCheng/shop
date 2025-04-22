@@ -1,0 +1,500 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: shop-system
+---
+# ConfigMap for MySQL初始化脚本
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-init-scripts
+  namespace: shop-system
+data:
+  init.sql: |
+    # 这里将包含SQL初始化脚本的内容
+    # 实际部署时需要将scripts/init.sql的内容复制到这里
+---
+# MySQL服务
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mysql
+  namespace: shop-system
+spec:
+  serviceName: mysql
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.0
+          ports:
+            - containerPort: 3306
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secrets
+                  key: root-password
+            - name: MYSQL_DATABASE
+              value: shop
+          volumeMounts:
+            - name: mysql-data
+              mountPath: /var/lib/mysql
+            - name: mysql-init-scripts
+              mountPath: /docker-entrypoint-initdb.d
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "500m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+          livenessProbe:
+            exec:
+              command:
+                - mysqladmin
+                - ping
+                - -h
+                - localhost
+                - -u
+                - root
+                - -p${MYSQL_ROOT_PASSWORD}
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+      volumes:
+        - name: mysql-init-scripts
+          configMap:
+            name: mysql-init-scripts
+  volumeClaimTemplates:
+    - metadata:
+        name: mysql-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 10Gi
+---
+# MySQL Secrets
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mysql-secrets
+  namespace: shop-system
+type: Opaque
+data:
+  root-password: cm9vdA== # "root" in base64
+---
+# MySQL Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+  namespace: shop-system
+spec:
+  ports:
+    - port: 3306
+      targetPort: 3306
+  selector:
+    app: mysql
+  clusterIP: None
+---
+# Redis服务
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redis
+  namespace: shop-system
+spec:
+  serviceName: redis
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+        - name: redis
+          image: redis:6.2-alpine
+          ports:
+            - containerPort: 6379
+          volumeMounts:
+            - name: redis-data
+              mountPath: /data
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "200m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          livenessProbe:
+            exec:
+              command: ["redis-cli", "ping"]
+            initialDelaySeconds: 15
+            periodSeconds: 10
+  volumeClaimTemplates:
+    - metadata:
+        name: redis-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 5Gi
+---
+# Redis Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: shop-system
+spec:
+  ports:
+    - port: 6379
+      targetPort: 6379
+  selector:
+    app: redis
+  clusterIP: None
+---
+# Elasticsearch服务
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: elasticsearch
+  namespace: shop-system
+spec:
+  serviceName: elasticsearch
+  replicas: 1
+  selector:
+    matchLabels:
+      app: elasticsearch
+  template:
+    metadata:
+      labels:
+        app: elasticsearch
+    spec:
+      containers:
+        - name: elasticsearch
+          image: elasticsearch:7.14.0
+          ports:
+            - containerPort: 9200
+            - containerPort: 9300
+          env:
+            - name: discovery.type
+              value: single-node
+            - name: ES_JAVA_OPTS
+              value: "-Xms512m -Xmx512m"
+          volumeMounts:
+            - name: es-data
+              mountPath: /usr/share/elasticsearch/data
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+            limits:
+              memory: "2Gi"
+              cpu: "1000m"
+  volumeClaimTemplates:
+    - metadata:
+        name: es-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 10Gi
+---
+# Elasticsearch Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: elasticsearch
+  namespace: shop-system
+spec:
+  ports:
+    - port: 9200
+      targetPort: 9200
+      name: http
+    - port: 9300
+      targetPort: 9300
+      name: transport
+  selector:
+    app: elasticsearch
+  clusterIP: None
+---
+# Consul服务
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: consul
+  namespace: shop-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: consul
+  template:
+    metadata:
+      labels:
+        app: consul
+    spec:
+      containers:
+        - name: consul
+          image: consul:1.10.4
+          args:
+            - "agent"
+            - "-server"
+            - "-bootstrap-expect=1"
+            - "-ui"
+            - "-client=0.0.0.0"
+          ports:
+            - containerPort: 8500
+              name: http
+            - containerPort: 8600
+              name: dns
+              protocol: UDP
+          volumeMounts:
+            - name: consul-data
+              mountPath: /consul/data
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "200m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+      volumes:
+        - name: consul-data
+          persistentVolumeClaim:
+            claimName: consul-data
+---
+# Consul PVC
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: consul-data
+  namespace: shop-system
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
+# Consul Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: consul
+  namespace: shop-system
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8500
+      targetPort: 8500
+      name: http
+    - port: 8600
+      targetPort: 8600
+      name: dns
+      protocol: UDP
+  selector:
+    app: consul
+---
+# Nacos服务
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nacos
+  namespace: shop-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nacos
+  template:
+    metadata:
+      labels:
+        app: nacos
+    spec:
+      containers:
+        - name: nacos
+          image: nacos/nacos-server:v2.0.3
+          ports:
+            - containerPort: 8848
+              name: client
+            - containerPort: 9848
+              name: client-rpc
+          env:
+            - name: MODE
+              value: standalone
+            - name: PREFER_HOST_MODE
+              value: hostname
+            - name: NACOS_AUTH_ENABLE
+              value: "true"
+            - name: NACOS_AUTH_TOKEN_EXPIRE_SECONDS
+              value: "18000"
+            - name: NACOS_AUTH_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: nacos-secrets
+                  key: auth-token
+            - name: JVM_XMS
+              value: "512m"
+            - name: JVM_XMX
+              value: "512m"
+          volumeMounts:
+            - name: nacos-data
+              mountPath: /home/nacos/data
+            - name: nacos-logs
+              mountPath: /home/nacos/logs
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "500m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+      volumes:
+        - name: nacos-data
+          persistentVolumeClaim:
+            claimName: nacos-data
+        - name: nacos-logs
+          persistentVolumeClaim:
+            claimName: nacos-logs
+---
+# Nacos Secrets
+apiVersion: v1
+kind: Secret
+metadata:
+  name: nacos-secrets
+  namespace: shop-system
+type: Opaque
+data:
+  auth-token: U2VjcmV0S2V5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5 # Base64编码的Token
+---
+# Nacos Data PVC
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nacos-data
+  namespace: shop-system
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
+# Nacos Logs PVC
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nacos-logs
+  namespace: shop-system
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
+# Nacos Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: nacos
+  namespace: shop-system
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8848
+      targetPort: 8848
+      name: client
+    - port: 9848
+      targetPort: 9848
+      name: client-rpc
+  selector:
+    app: nacos
+---
+# Jaeger服务
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jaeger
+  namespace: shop-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jaeger
+  template:
+    metadata:
+      labels:
+        app: jaeger
+    spec:
+      containers:
+        - name: jaeger
+          image: jaegertracing/all-in-one:1.29
+          ports:
+            - containerPort: 5775
+              protocol: UDP
+            - containerPort: 6831
+              protocol: UDP
+            - containerPort: 6832
+              protocol: UDP
+            - containerPort: 5778
+            - containerPort: 16686
+            - containerPort: 14268
+            - containerPort: 14250
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "300m"
+            limits:
+              memory: "1Gi"
+              cpu: "600m"
+---
+# Jaeger Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: jaeger
+  namespace: shop-system
+spec:
+  type: ClusterIP
+  ports:
+    - port: 5775
+      targetPort: 5775
+      protocol: UDP
+      name: udp1
+    - port: 6831
+      targetPort: 6831
+      protocol: UDP
+      name: udp2
+    - port: 6832
+      targetPort: 6832
+      protocol: UDP
+      name: udp3
+    - port: 5778
+      targetPort: 5778
+      name: config
+    - port: 16686
+      targetPort: 16686
+      name: web
+    - port: 14268
+      targetPort: 14268
+      name: collector1
+    - port: 14250
+      targetPort: 14250
+      name: collector2
+  selector:
+    app: jaeger

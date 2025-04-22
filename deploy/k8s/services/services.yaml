@@ -1,0 +1,365 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-srv
+  namespace: shop-system
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: user-srv
+  template:
+    metadata:
+      labels:
+        app: user-srv
+    spec:
+      containers:
+        - name: user-srv
+          image: shop/user-srv:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: TZ
+              value: Asia/Shanghai
+          ports:
+            - containerPort: 50051
+          volumeMounts:
+            - name: config
+              mountPath: /app/config-pro.yaml
+              subPath: config-pro.yaml
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "200m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          livenessProbe:
+            tcpSocket:
+              port: 50051
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+          readinessProbe:
+            tcpSocket:
+              port: 50051
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      volumes:
+        - name: config
+          configMap:
+            name: user-srv-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-srv
+  namespace: shop-system
+spec:
+  selector:
+    app: user-srv
+  ports:
+    - port: 50051
+      targetPort: 50051
+  type: ClusterIP
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: user-srv-config
+  namespace: shop-system
+data:
+  config-pro.yaml: |
+    # 此处需要添加实际的配置内容
+    # 会在实际部署时从shop_srv/user_srv/config-pro.yaml复制
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: goods-srv
+  namespace: shop-system
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: goods-srv
+  template:
+    metadata:
+      labels:
+        app: goods-srv
+    spec:
+      containers:
+        - name: goods-srv
+          image: shop/goods-srv:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: TZ
+              value: Asia/Shanghai
+          ports:
+            - containerPort: 50052
+          volumeMounts:
+            - name: config
+              mountPath: /app/config-pro.yaml
+              subPath: config-pro.yaml
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "200m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          livenessProbe:
+            tcpSocket:
+              port: 50052
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            tcpSocket:
+              port: 50052
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      volumes:
+        - name: config
+          configMap:
+            name: goods-srv-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: goods-srv
+  namespace: shop-system
+spec:
+  selector:
+    app: goods-srv
+  ports:
+    - port: 50052
+      targetPort: 50052
+  type: ClusterIP
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: goods-srv-config
+  namespace: shop-system
+data:
+  config-pro.yaml: |
+    # 此处需要添加实际的配置内容
+    # 会在实际部署时从shop_srv/goods_srv/config-pro.yaml复制
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: inventory-srv
+  namespace: shop-system
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: inventory-srv
+  template:
+    metadata:
+      labels:
+        app: inventory-srv
+    spec:
+      containers:
+        - name: inventory-srv
+          image: shop/inventory-srv:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: TZ
+              value: Asia/Shanghai
+          ports:
+            - containerPort: 50053
+          volumeMounts:
+            - name: config
+              mountPath: /app/config-pro.yaml
+              subPath: config-pro.yaml
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "200m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          livenessProbe:
+            tcpSocket:
+              port: 50053
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            tcpSocket:
+              port: 50053
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      volumes:
+        - name: config
+          configMap:
+            name: inventory-srv-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: inventory-srv
+  namespace: shop-system
+spec:
+  selector:
+    app: inventory-srv
+  ports:
+    - port: 50053
+      targetPort: 50053
+  type: ClusterIP
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: inventory-srv-config
+  namespace: shop-system
+data:
+  config-pro.yaml: |
+    # 此处需要添加实际的配置内容
+    # 会在实际部署时从shop_srv/inventory_srv/config-pro.yaml复制
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order-srv
+  namespace: shop-system
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: order-srv
+  template:
+    metadata:
+      labels:
+        app: order-srv
+    spec:
+      containers:
+        - name: order-srv
+          image: shop/order-srv:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: TZ
+              value: Asia/Shanghai
+          ports:
+            - containerPort: 50054
+          volumeMounts:
+            - name: config
+              mountPath: /app/config-pro.yaml
+              subPath: config-pro.yaml
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "200m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          livenessProbe:
+            tcpSocket:
+              port: 50054
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            tcpSocket:
+              port: 50054
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      volumes:
+        - name: config
+          configMap:
+            name: order-srv-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: order-srv
+  namespace: shop-system
+spec:
+  selector:
+    app: order-srv
+  ports:
+    - port: 50054
+      targetPort: 50054
+  type: ClusterIP
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: order-srv-config
+  namespace: shop-system
+data:
+  config-pro.yaml: |
+    # 此处需要添加实际的配置内容
+    # 会在实际部署时从shop_srv/order_srv/config-pro.yaml复制
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: userop-srv
+  namespace: shop-system
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: userop-srv
+  template:
+    metadata:
+      labels:
+        app: userop-srv
+    spec:
+      containers:
+        - name: userop-srv
+          image: shop/userop-srv:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: TZ
+              value: Asia/Shanghai
+          ports:
+            - containerPort: 50055
+          volumeMounts:
+            - name: config
+              mountPath: /app/config-pro.yaml
+              subPath: config-pro.yaml
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "200m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          livenessProbe:
+            tcpSocket:
+              port: 50055
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            tcpSocket:
+              port: 50055
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      volumes:
+        - name: config
+          configMap:
+            name: userop-srv-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: userop-srv
+  namespace: shop-system
+spec:
+  selector:
+    app: userop-srv
+  ports:
+    - port: 50055
+      targetPort: 50055
+  type: ClusterIP
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: userop-srv-config
+  namespace: shop-system
+data:
+  config-pro.yaml: |
+    # 此处需要添加实际的配置内容
+    # 会在实际部署时从shop_srv/userop_srv/config-pro.yaml复制

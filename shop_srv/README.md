@@ -23,12 +23,13 @@ API测试：https://nilszhai.apifox.cn
 - tests（测试用例）
 - main.go（主函数）
 
-
+## nacos详细配置：
+https://gitee.com/jzins/mxshop/blob/master/srv_golang/nacosInfo.md
 
 ## 用户服务：
 >密码是md5盐值加密，认证方式是JWT认证
 
->文章：https://blog.csdn.net/the_shy_faker/article/details/127773564
+>详细参考我的文章：https://blog.csdn.net/the_shy_faker/article/details/127773564
 
 1. 用户列表接口
 2. 通过id和mobile查询用户

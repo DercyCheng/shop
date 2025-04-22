@@ -1,0 +1,526 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-web
+  namespace: shop-system
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: user-web
+  template:
+    metadata:
+      labels:
+        app: user-web
+    spec:
+      containers:
+        - name: user-web
+          image: shop/user-web:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: TZ
+              value: Asia/Shanghai
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - name: config
+              mountPath: /app/config-pro.yaml
+              subPath: config-pro.yaml
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      volumes:
+        - name: config
+          configMap:
+            name: user-web-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-web
+  namespace: shop-system
+spec:
+  selector:
+    app: user-web
+  ports:
+    - port: 8080
+      targetPort: 8080
+  type: ClusterIP
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: user-web-config
+  namespace: shop-system
+data:
+  config-pro.yaml: |
+    # 此处需要添加实际的配置内容
+    # 会在实际部署时从shop_web/user-web/config-pro.yaml复制
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: goods-web
+  namespace: shop-system
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: goods-web
+  template:
+    metadata:
+      labels:
+        app: goods-web
+    spec:
+      containers:
+        - name: goods-web
+          image: shop/goods-web:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: TZ
+              value: Asia/Shanghai
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - name: config
+              mountPath: /app/config-pro.yaml
+              subPath: config-pro.yaml
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      volumes:
+        - name: config
+          configMap:
+            name: goods-web-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: goods-web
+  namespace: shop-system
+spec:
+  selector:
+    app: goods-web
+  ports:
+    - port: 8080
+      targetPort: 8080
+  type: ClusterIP
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: goods-web-config
+  namespace: shop-system
+data:
+  config-pro.yaml: |
+    # 此处需要添加实际的配置内容
+    # 会在实际部署时从shop_web/goods-web/config-pro.yaml复制
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order-web
+  namespace: shop-system
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: order-web
+  template:
+    metadata:
+      labels:
+        app: order-web
+    spec:
+      containers:
+        - name: order-web
+          image: shop/order-web:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: TZ
+              value: Asia/Shanghai
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - name: config
+              mountPath: /app/config-pro.yaml
+              subPath: config-pro.yaml
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      volumes:
+        - name: config
+          configMap:
+            name: order-web-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: order-web
+  namespace: shop-system
+spec:
+  selector:
+    app: order-web
+  ports:
+    - port: 8080
+      targetPort: 8080
+  type: ClusterIP
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: order-web-config
+  namespace: shop-system
+data:
+  config-pro.yaml: |
+    # 此处需要添加实际的配置内容
+    # 会在实际部署时从shop_web/order-web/config-pro.yaml复制
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: userop-web
+  namespace: shop-system
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: userop-web
+  template:
+    metadata:
+      labels:
+        app: userop-web
+    spec:
+      containers:
+        - name: userop-web
+          image: shop/userop-web:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: TZ
+              value: Asia/Shanghai
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - name: config
+              mountPath: /app/config-pro.yaml
+              subPath: config-pro.yaml
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      volumes:
+        - name: config
+          configMap:
+            name: userop-web-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: userop-web
+  namespace: shop-system
+spec:
+  selector:
+    app: userop-web
+  ports:
+    - port: 8080
+      targetPort: 8080
+  type: ClusterIP
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: userop-web-config
+  namespace: shop-system
+data:
+  config-pro.yaml: |
+    # 此处需要添加实际的配置内容
+    # 会在实际部署时从shop_web/userop-web/config-pro.yaml复制
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: oss-web
+  namespace: shop-system
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: oss-web
+  template:
+    metadata:
+      labels:
+        app: oss-web
+    spec:
+      containers:
+        - name: oss-web
+          image: shop/oss-web:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: TZ
+              value: Asia/Shanghai
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - name: config
+              mountPath: /app/config-pro.yaml
+              subPath: config-pro.yaml
+            - name: static-data
+              mountPath: /app/static
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      volumes:
+        - name: config
+          configMap:
+            name: oss-web-config
+        - name: static-data
+          persistentVolumeClaim:
+            claimName: oss-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: oss-web
+  namespace: shop-system
+spec:
+  selector:
+    app: oss-web
+  ports:
+    - port: 8080
+      targetPort: 8080
+  type: ClusterIP
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: oss-web-config
+  namespace: shop-system
+data:
+  config-pro.yaml: |
+    # 此处需要添加实际的配置内容
+    # 会在实际部署时从shop_web/oss-web/config-pro.yaml复制
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: oss-data
+  namespace: shop-system
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi
+---
+# Nginx作为API网关的部署配置
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shop-gateway
+  namespace: shop-system
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: shop-gateway
+  template:
+    metadata:
+      labels:
+        app: shop-gateway
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.21-alpine
+          ports:
+            - containerPort: 80
+            - containerPort: 443
+          volumeMounts:
+            - name: nginx-conf
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+            - name: nginx-confd
+              mountPath: /etc/nginx/conf.d
+            - name: nginx-ssl
+              mountPath: /etc/nginx/ssl
+            - name: nginx-html
+              mountPath: /usr/share/nginx/html
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 10
+      volumes:
+        - name: nginx-conf
+          configMap:
+            name: nginx-conf
+        - name: nginx-confd
+          configMap:
+            name: nginx-confd
+        - name: nginx-ssl
+          secret:
+            secretName: nginx-ssl
+        - name: nginx-html
+          configMap:
+            name: nginx-html
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: shop-gateway
+  namespace: shop-system
+spec:
+  type: LoadBalancer # 使用LoadBalancer类型将服务暴露到外部
+  ports:
+    - port: 80
+      targetPort: 80
+      name: http
+    - port: 443
+      targetPort: 443
+      name: https
+  selector:
+    app: shop-gateway
+---
+# Nginx 配置文件ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-conf
+  namespace: shop-system
+data:
+  nginx.conf: |
+    # 此处需要添加实际的nginx.conf内容
+    # 会在实际部署时从deploy/nginx/nginx.conf复制
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-confd
+  namespace: shop-system
+data:
+  default.conf: |
+    # 此处需要添加实际的default.conf内容
+    # 会在实际部署时从deploy/nginx/conf.d/default.conf复制
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-html
+  namespace: shop-system
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html>
+    <head>
+    <title>Welcome to Shop System!</title>
+    <style>
+        body {
+            width: 35em;
+            margin: 0 auto;
+            font-family: Tahoma, Verdana, Arial, sans-serif;
+        }
+    </style>
+    </head>
+    <body>
+    <h1>Welcome to Shop System!</h1>
+    <p>If you see this page, the shop system is working properly.</p>
+    <p>For online documentation and API references please visit
+    <a href="/swagger/index.html">Swagger Documentation</a>.</p>
+    </body>
+    </html>
+---
+# 为SSL证书创建Secret（部署时需要更新）
+apiVersion: v1
+kind: Secret
+metadata:
+  name: nginx-ssl
+  namespace: shop-system
+type: Opaque
+data:
+  server.crt: "" # Base64编码的SSL证书，部署时需要更新
+  server.key: "" # Base64编码的SSL密钥，部署时需要更新
