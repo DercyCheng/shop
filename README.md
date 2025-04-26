@@ -5,6 +5,10 @@
   <img src="https://img.shields.io/badge/Docker-Compose-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker" />
   <img src="https://img.shields.io/badge/gRPC-Microservices-2396F3?style=for-the-badge&logo=grpc&logoColor=white" alt="gRPC" />
   <img src="https://img.shields.io/badge/MySQL-Database-4479A1?style=for-the-badge&logo=mysql&logoColor=white" alt="MySQL" />
+  <img src="https://img.shields.io/badge/MongoDB-Database-47A248?style=for-the-badge&logo=mongodb&logoColor=white" alt="MongoDB" />
+  <img src="https://img.shields.io/badge/Nginx-Gateway-009639?style=for-the-badge&logo=nginx&logoColor=white" alt="Nginx" />
+  <img src="https://img.shields.io/badge/Consul-Service_Discovery-F24C53?style=for-the-badge&logo=consul&logoColor=white" alt="Consul" />
+  <img src="https://img.shields.io/badge/Swagger-API_Docs-85EA2D?style=for-the-badge&logo=swagger&logoColor=black" alt="Swagger" />
   <img src="https://img.shields.io/badge/Vue.js-3.x-4FC08D?style=for-the-badge&logo=vue.js&logoColor=white" alt="Vue.js" />
   <img src="https://img.shields.io/badge/Wire-DI-00BFFF?style=for-the-badge&logo=go&logoColor=white" alt="Wire DI" />
 </p>
@@ -55,13 +59,125 @@ Shop 采用经典的微服务分层架构，确保了系统的模块化和可维
 
 ### 系统架构图
 
-![架构图](./image/README/1744869775075.png)
+```mermaid
+graph TD
+    subgraph 客户端
+        Browser[浏览器]
+        MobileApp[移动应用]
+    end
+
+    subgraph 前端层
+        VueAdmin[管理后台 Vue 3]
+    end
+
+    subgraph 网关层
+        Nginx[Nginx 网关]
+        Gateway[API Gateway]
+    end
+
+    subgraph API层
+        UserAPI[用户 API]
+        GoodsAPI[商品 API]
+        OrderAPI[订单 API]
+        InventoryAPI[库存 API]
+        UserOpAPI[用户操作 API]
+        OssAPI[OSS API]
+    end
+
+    subgraph 服务层
+        UserSrv[用户服务]
+        GoodsSrv[商品服务]
+        OrderSrv[订单服务]
+        InventorySrv[库存服务]
+        UserOpSrv[用户操作服务]
+    end
+
+    subgraph 基础设施层
+        MySQL[(MySQL)]
+        MongoDB[(MongoDB)]
+        Redis[(Redis)]
+        ES[(ElasticSearch)]
+        MQ[RocketMQ]
+        Consul[Consul]
+        Nacos[Nacos]
+        Jaeger[Jaeger]
+        Logs[日志系统 Zap]
+    end
+
+    %% 客户端连接
+    Browser --> Nginx
+    MobileApp --> Nginx
+    Nginx --> Gateway
+    Browser --> VueAdmin
+
+    %% 网关连接API层
+    Gateway --> UserAPI
+    Gateway --> GoodsAPI
+    Gateway --> OrderAPI
+    Gateway --> InventoryAPI
+    Gateway --> UserOpAPI
+    Gateway --> OssAPI
+
+    %% API层连接服务层
+    UserAPI --> UserSrv
+    GoodsAPI --> GoodsSrv
+    OrderAPI --> OrderSrv
+    InventoryAPI --> InventorySrv
+    UserOpAPI --> UserOpSrv
+
+    %% 服务层互相调用
+    OrderSrv --> InventorySrv
+    OrderSrv --> GoodsSrv
+    OrderSrv --> UserSrv
+    GoodsSrv --> InventorySrv
+    
+    %% 服务层连接基础设施
+    UserSrv --> MySQL
+    GoodsSrv --> MySQL
+    OrderSrv --> MySQL
+    InventorySrv --> MySQL
+    UserOpSrv --> MySQL
+    UserOpSrv --> MongoDB
+    
+    GoodsSrv --> ES
+    UserSrv --> Redis
+    OrderSrv --> Redis
+    InventorySrv --> Redis
+    
+    OrderSrv --> MQ
+    InventorySrv --> MQ
+    
+    UserSrv -.-> Consul
+    GoodsSrv -.-> Consul
+    OrderSrv -.-> Consul
+    InventorySrv -.-> Consul
+    UserOpSrv -.-> Consul
+    
+    UserSrv -.-> Nacos
+    GoodsSrv -.-> Nacos
+    OrderSrv -.-> Nacos
+    InventorySrv -.-> Nacos
+    UserOpSrv -.-> Nacos
+    
+    UserSrv -.-> Jaeger
+    GoodsSrv -.-> Jaeger
+    OrderSrv -.-> Jaeger
+    InventorySrv -.-> Jaeger
+    UserOpSrv -.-> Jaeger
+    
+    UserSrv -.-> Logs
+    GoodsSrv -.-> Logs
+    OrderSrv -.-> Logs
+    InventorySrv -.-> Logs
+    UserOpSrv -.-> Logs
+```
 
 ### 分层设计
 
 | 层级         | 职责             | 组件                                                           |
 | ------------ | ---------------- | -------------------------------------------------------------- |
-| 基础设施层   | 提供基础服务支持 | MySQL、Redis、ElasticSearch、RocketMQ、Consul、Nacos           |
+| 网关层       | 请求路由与负载均衡 | Nginx、API Gateway                                             |
+| 基础设施层   | 提供基础服务支持 | MySQL、MongoDB、Redis、ElasticSearch、RocketMQ、Consul、Nacos、Zap  |
 | 服务层 (SRV) | 实现核心业务逻辑 | 用户服务、商品服务、库存服务、订单服务、用户操作服务           |
 | API 层 (Web) | 提供 HTTP 接口   | 用户 API、商品 API、订单 API、库存 API、用户操作 API、OSS 服务 |
 | 前端层       | 用户界面展示     | 管理后台 (Vue 3 + Element Plus)                                |
@@ -114,9 +230,12 @@ graph TD
     Go --> Gin[Gin Web 框架]
     Go --> GORM[GORM]
     Go --> Wire[Wire 依赖注入]
+    Go --> Swagger[Swagger 文档]
+    Go --> Zap[Zap 日志]
   
     subgraph 数据存储
         MySQL[(MySQL)]
+        MongoDB[(MongoDB)]
         Redis[(Redis)]
         ES[(ElasticSearch)]
     end
@@ -126,27 +245,42 @@ graph TD
         Nacos[Nacos 配置中心]
         RocketMQ[RocketMQ 消息队列]
         Jaeger[Jaeger 链路追踪]
+        Nginx[Nginx 反向代理]
     end
   
     GRPC --> Consul
     GRPC --> Nacos
     Gin --> GRPC
     GORM --> MySQL
+    Go --> MongoDB
     Go --> Redis
     Go --> ES
     Go --> RocketMQ
     Go --> Jaeger
     Wire --> Go
+    Nginx --> Gin
 ```
 
-### 前端技术栈
+### 后端核心技术详解
 
-- **框架**: Vue 3 + TypeScript
-- **组件库**: Element Plus
-- **状态管理**: Pinia
-- **路由**: Vue Router
-- **HTTP 客户端**: Axios
-- **构建工具**: Vite
+| 技术                | 说明                                       | 应用场景                                 |
+| ------------------- | ------------------------------------------ | ---------------------------------------- |
+| Go                  | 核心开发语言                               | 所有微服务开发                           |
+| gRPC                | 高性能RPC框架                              | 微服务间通信                             |
+| Gin                 | HTTP Web框架                               | API接口开发                              |
+| GORM                | ORM框架                                    | 数据库操作                               |
+| MySQL               | 关系型数据库                               | 核心业务数据存储                         |
+| MongoDB             | 文档型数据库                               | 日志、用户操作历史等非结构化数据存储     |
+| Redis               | 内存数据库                                 | 缓存、分布式锁、计数器                   |
+| ElasticSearch       | 全文搜索引擎                               | 商品搜索、日志分析                       |
+| Consul              | 服务注册与发现                             | 服务注册、健康检查、配置共享             |
+| Nacos               | 服务发现和配置管理                         | 动态配置管理、服务注册                   |
+| RocketMQ            | 分布式消息队列                             | 异步通信、事件驱动、削峰填谷             |
+| Nginx               | 高性能HTTP和反向代理服务器                 | 负载均衡、静态资源、API网关              |
+| Swagger             | API文档工具                                | API接口文档生成与测试                    |
+| Jaeger              | 分布式追踪系统                             | 微服务调用链路追踪                       |
+| Wire                | 编译期依赖注入                             | 依赖管理、代码解耦                       |
+| Zap                 | 高性能日志库                               | 结构化日志记录                           |
 
 ## 📁 项目结构
 
@@ -156,21 +290,34 @@ shop/
 ├── Dockerfile          # Docker 构建文件
 ├── README.md           # 项目说明
 ├── doc/                # 详细文档
-├── image/              # 图片资源
-├── scripts/            # 部署脚本
-├── shop_api/           # API 层
-│   ├── goods_web/      # 商品 API
-│   ├── order_web/      # 订单 API
-│   ├── oss_web/        # 对象存储 API
-│   ├── user_web/       # 用户 API
-│   └── userop_web/     # 用户操作 API
-├── shop_srv/           # 服务层
-│   ├── goods_srv/      # 商品服务
-│   ├── inventory_srv/  # 库存服务
-│   ├── order_srv/      # 订单服务
-│   ├── user_srv/       # 用户服务
-│   └── userop_srv/     # 用户操作服务
-└── shop_stress/        # 压力测试工具
+├── api-gateway/        # API 网关
+│   ├── configs/        # 网关配置
+│   ├── middleware/     # 网关中间件
+│   └── routes/         # 路由定义
+├── backend/            # 后端服务
+│   ├── user/           # 用户服务
+│   │   ├── configs/    # 配置文件
+│   │   ├── api/        # API定义
+│   │   │   └── proto/      # Protocol Buffers
+│   │   ├── internal/   # 内部实现
+│   │   │   ├── domain/     # 领域模型
+│   │   │   ├── repository/ # 数据访问层
+│   │   │   ├── service/    # 业务逻辑层
+│   │   │   └── web/        # Web API层
+│   │   │       └── swagger/   # Swagger 文档
+│   │   ├── pkg/        # 可共享包
+│   │   │   └── logger/     # Zap 日志配置
+│   │   └── script/     # 脚本文件
+│   ├── product/        # 商品服务
+│   ├── order/          # 订单服务
+│   ├── inventory/      # 库存服务
+│   └── userop/         # 用户操作服务
+├── shared/             # 共享库
+│   ├── consul/         # Consul 工具
+│   ├── nacos/          # Nacos 工具
+│   ├── grpc/           # gRPC 工具
+│   └── logger/         # Zap 日志工具
+└── frontend/           # 前端应用
 ```
 
 ## 🚀 快速开始
@@ -180,6 +327,8 @@ shop/
 - Docker 和 Docker Compose
 - Go 1.16+
 - MySQL 8.0+
+- MongoDB 4.4+
+- Nginx 1.20+
 - 其他依赖组件（可通过 Docker Compose 自动部署）
 
 ### 使用 Docker Compose 一键部署
@@ -190,14 +339,14 @@ git clone https://github.com/username/shop.git
 cd shop
 
 # 启动所有服务
-python run.py
+docker-compose up -d
 ```
 
 ### 本地开发环境设置
 
 ```bash
 # 启动基础设施
-docker-compose up -d mysql nacos consul jaeger rocketmq
+docker-compose up -d mysql mongodb redis nacos consul jaeger rocketmq nginx
 
 # 启动服务层
 cd scripts
@@ -218,6 +367,19 @@ API 文档通过 Swagger UI 提供，启动服务后可访问：
 - 订单服务: http://localhost:8023/swagger/index.html
 - 用户操作: http://localhost:8024/swagger/index.html
 - OSS 服务: http://localhost:8025/swagger/index.html
+
+### Swagger 集成
+
+系统使用 swag 工具自动从代码注释生成 Swagger 文档：
+
+```bash
+# 安装 swag
+go install github.com/swaggo/swag/cmd/swag@latest
+
+# 在服务目录中生成 Swagger 文档
+cd backend/user
+swag init -g internal/web/router.go
+```
 
 ## 📊 性能测试
 
