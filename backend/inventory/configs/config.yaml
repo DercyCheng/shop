@@ -1,0 +1,15 @@
+environment: development
+
+server:
+  host: "0.0.0.0"
+  port: 50053
+
+database:
+  host: "localhost"
+  port: 3306
+  user: "root"
+  password: "password"
+  name: "shop_inventory"
+  maxIdleConns: 10
+  maxOpenConns: 100
+  connMaxLifetimeMinutes: 60

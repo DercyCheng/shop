@@ -2,10 +2,23 @@ package service
 
 import (
 	"context"
+	"net/http"
 
 	"shop/backend/user/internal/domain/entity"
 	"shop/backend/user/internal/domain/valueobject"
 )
+
+// UserOperationLog MongoDB中的用户操作日志结构
+type UserOperationLog struct {
+	UserID      int64       `bson:"user_id"`
+	Operation   string      `bson:"operation"` // 登录、注册、修改密码等
+	Status      string      `bson:"status"`    // success、failed
+	IP          string      `bson:"ip"`
+	UserAgent   string      `bson:"user_agent"`
+	RequestData string      `bson:"request_data,omitempty"` // 敏感数据脱敏
+	ErrorMsg    string      `bson:"error_msg,omitempty"`
+	Details     interface{} `bson:"details,omitempty"` // 额外数据，如请求参数等
+}
 
 // AuthService 认证服务接口
 type AuthService interface {
@@ -38,4 +51,7 @@ type AuthService interface {
 
 	// VerifyVerificationCode 验证验证码
 	VerifyVerificationCode(ctx context.Context, phone, code, codeType string) (bool, error)
+
+	// LogUserOperation 记录用户操作日志
+	LogUserOperation(ctx context.Context, log *UserOperationLog, req *http.Request) error
 }

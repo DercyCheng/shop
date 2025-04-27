@@ -1,0 +1,282 @@
+syntax = "proto3";
+
+package product;
+
+option go_package = "shop/product/api/proto/product";
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+// 商品服务定义
+service ProductService {
+  // 商品相关
+  rpc GetProduct(GetProductRequest) returns (ProductInfo) {}
+  rpc ListProducts(ListProductsRequest) returns (ProductListResponse) {}
+  rpc BatchGetProducts(BatchGetProductsRequest)
+      returns (BatchGetProductsResponse) {}
+  rpc CreateProduct(CreateProductRequest) returns (ProductInfo) {}
+  rpc UpdateProduct(UpdateProductRequest) returns (ProductInfo) {}
+  rpc DeleteProduct(DeleteProductRequest) returns (google.protobuf.Empty) {}
+
+  // 分类相关
+  rpc GetCategory(GetCategoryRequest) returns (CategoryInfo) {}
+  rpc ListCategories(ListCategoriesRequest) returns (CategoryListResponse) {}
+  rpc CreateCategory(CreateCategoryRequest) returns (CategoryInfo) {}
+  rpc UpdateCategory(UpdateCategoryRequest) returns (CategoryInfo) {}
+  rpc DeleteCategory(DeleteCategoryRequest) returns (google.protobuf.Empty) {}
+
+  // 品牌相关
+  rpc GetBrand(GetBrandRequest) returns (BrandInfo) {}
+  rpc ListBrands(ListBrandsRequest) returns (BrandListResponse) {}
+  rpc CreateBrand(CreateBrandRequest) returns (BrandInfo) {}
+  rpc UpdateBrand(UpdateBrandRequest) returns (BrandInfo) {}
+  rpc DeleteBrand(DeleteBrandRequest) returns (google.protobuf.Empty) {}
+
+  // 轮播图相关
+  rpc ListBanners(ListBannersRequest) returns (BannerListResponse) {}
+  rpc CreateBanner(CreateBannerRequest) returns (BannerInfo) {}
+  rpc UpdateBanner(UpdateBannerRequest) returns (BannerInfo) {}
+  rpc DeleteBanner(DeleteBannerRequest) returns (google.protobuf.Empty) {}
+
+  // 品牌分类关联
+  rpc ListCategoryBrands(ListCategoryBrandsRequest)
+      returns (CategoryBrandListResponse) {}
+  rpc GetCategoryBrandList(GetCategoryBrandListRequest)
+      returns (BrandListResponse) {}
+  rpc CreateCategoryBrand(CreateCategoryBrandRequest)
+      returns (CategoryBrandInfo) {}
+  rpc DeleteCategoryBrand(DeleteCategoryBrandRequest)
+      returns (google.protobuf.Empty) {}
+  rpc UpdateCategoryBrand(UpdateCategoryBrandRequest)
+      returns (CategoryBrandInfo) {}
+}
+
+// 商品相关消息定义
+message GetProductRequest { int64 id = 1; }
+
+message ProductInfo {
+  int64 id = 1;
+  string name = 2;
+  string goods_sn = 3;
+  int64 category_id = 4;
+  int64 brand_id = 5;
+  bool on_sale = 6;
+  bool ship_free = 7;
+  bool is_new = 8;
+  bool is_hot = 9;
+  int32 click_num = 10;
+  int32 sold_num = 11;
+  int32 fav_num = 12;
+  float market_price = 13;
+  float shop_price = 14;
+  string goods_brief = 15;
+  string goods_desc = 16;
+  string goods_front_image = 17;
+  repeated string images = 18;
+  google.protobuf.Timestamp created_at = 19;
+  google.protobuf.Timestamp updated_at = 20;
+}
+
+message ListProductsRequest {
+  int32 page = 1;
+  int32 page_size = 2;
+  string keyword = 3;
+  int64 category_id = 4;
+  int64 brand_id = 5;
+  bool on_sale = 6;
+  bool ship_free = 7;
+  bool is_new = 8;
+  bool is_hot = 9;
+  float min_price = 10;
+  float max_price = 11;
+  enum OrderBy {
+    DEFAULT = 0;
+    PRICE_ASC = 1;
+    PRICE_DESC = 2;
+    SOLD_DESC = 3;
+    NEW_DESC = 4;
+  }
+  OrderBy order_by = 12;
+}
+
+message ProductListResponse {
+  int32 total = 1;
+  repeated ProductInfo products = 2;
+}
+
+message BatchGetProductsRequest { repeated int64 product_ids = 1; }
+
+message BatchGetProductsResponse { repeated ProductInfo products = 1; }
+
+message CreateProductRequest {
+  string name = 1;
+  string goods_sn = 2;
+  int64 category_id = 3;
+  int64 brand_id = 4;
+  bool on_sale = 5;
+  bool ship_free = 6;
+  bool is_new = 7;
+  bool is_hot = 8;
+  float market_price = 9;
+  float shop_price = 10;
+  string goods_brief = 11;
+  string goods_desc = 12;
+  string goods_front_image = 13;
+  repeated string images = 14;
+}
+
+message UpdateProductRequest {
+  int64 id = 1;
+  string name = 2;
+  string goods_sn = 3;
+  int64 category_id = 4;
+  int64 brand_id = 5;
+  bool on_sale = 6;
+  bool ship_free = 7;
+  bool is_new = 8;
+  bool is_hot = 9;
+  float market_price = 10;
+  float shop_price = 11;
+  string goods_brief = 12;
+  string goods_desc = 13;
+  string goods_front_image = 14;
+  repeated string images = 15;
+}
+
+message DeleteProductRequest { int64 id = 1; }
+
+// 分类相关消息定义
+message GetCategoryRequest { int64 id = 1; }
+
+message CategoryInfo {
+  int64 id = 1;
+  string name = 2;
+  int64 parent_category_id = 3;
+  int32 level = 4;
+  bool is_tab = 5;
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp updated_at = 7;
+}
+
+message ListCategoriesRequest {
+  int64 parent_id = 1;
+  int32 level = 2;
+}
+
+message CategoryListResponse { repeated CategoryInfo categories = 1; }
+
+message CreateCategoryRequest {
+  string name = 1;
+  int64 parent_category_id = 2;
+  int32 level = 3;
+  bool is_tab = 4;
+}
+
+message UpdateCategoryRequest {
+  int64 id = 1;
+  string name = 2;
+  int64 parent_category_id = 3;
+  int32 level = 4;
+  bool is_tab = 5;
+}
+
+message DeleteCategoryRequest { int64 id = 1; }
+
+// 品牌相关消息定义
+message GetBrandRequest { int64 id = 1; }
+
+message BrandInfo {
+  int64 id = 1;
+  string name = 2;
+  string logo = 3;
+  google.protobuf.Timestamp created_at = 4;
+  google.protobuf.Timestamp updated_at = 5;
+}
+
+message ListBrandsRequest {
+  int32 page = 1;
+  int32 page_size = 2;
+}
+
+message BrandListResponse {
+  int32 total = 1;
+  repeated BrandInfo brands = 2;
+}
+
+message CreateBrandRequest {
+  string name = 1;
+  string logo = 2;
+}
+
+message UpdateBrandRequest {
+  int64 id = 1;
+  string name = 2;
+  string logo = 3;
+}
+
+message DeleteBrandRequest { int64 id = 1; }
+
+// 轮播图相关消息定义
+message BannerInfo {
+  int64 id = 1;
+  string image = 2;
+  string url = 3;
+  int32 index = 4;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp updated_at = 6;
+}
+
+message ListBannersRequest { int32 limit = 1; }
+
+message BannerListResponse { repeated BannerInfo banners = 1; }
+
+message CreateBannerRequest {
+  string image = 1;
+  string url = 2;
+  int32 index = 3;
+}
+
+message UpdateBannerRequest {
+  int64 id = 1;
+  string image = 2;
+  string url = 3;
+  int32 index = 4;
+}
+
+message DeleteBannerRequest { int64 id = 1; }
+
+// 品牌分类关联相关消息定义
+message CategoryBrandInfo {
+  int64 id = 1;
+  int64 category_id = 2;
+  int64 brand_id = 3;
+  BrandInfo brand = 4;
+  CategoryInfo category = 5;
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp updated_at = 7;
+}
+
+message GetCategoryBrandListRequest { int64 category_id = 1; }
+
+message ListCategoryBrandsRequest {
+  int32 page = 1;
+  int32 page_size = 2;
+}
+
+message CategoryBrandListResponse {
+  int32 total = 1;
+  repeated CategoryBrandInfo category_brands = 2;
+}
+
+message CreateCategoryBrandRequest {
+  int64 category_id = 1;
+  int64 brand_id = 2;
+}
+
+message UpdateCategoryBrandRequest {
+  int64 id = 1;
+  int64 category_id = 2;
+  int64 brand_id = 3;
+}
+
+message DeleteCategoryBrandRequest { int64 id = 1; }

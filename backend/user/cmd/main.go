@@ -5,20 +5,19 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
-	"github.com/gin-gonic/gin"
-	"github.com/redis/go-redis/v9"
-	"github.com/spf13/viper"
-	"google.golang.org/grpc"
+	"github.com/go-redis/redis/v8"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.uber.org/zap"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 
-	pb "shop/backend/user/api/proto/user"
+	"shop/backend/user/api/proto"
 	"shop/backend/user/configs"
 	"shop/backend/user/internal/repository"
 	"shop/backend/user/internal/repository/cache"
@@ -26,157 +25,193 @@ import (
 	"shop/backend/user/internal/service"
 	grpcHandler "shop/backend/user/internal/web/grpc"
 	httpHandler "shop/backend/user/internal/web/http"
+	"shop/backend/user/pkg/jwt"
 )
 
 func main() {
 	// 加载配置
 	cfg := loadConfig()
 
+	// 初始化日志
+	logger := initLogger(cfg.Log)
+	defer logger.Sync()
+
 	// 初始化数据库连接
-	db := initDatabase(cfg.Database)
+	db := initDatabase(cfg.Database, logger)
 
 	// 初始化Redis连接
-	redisClient := initRedis(cfg.Redis)
+	redisClient := initRedis(cfg.Redis, logger)
+
+	// 初始化MongoDB连接
+	mongoClient := initMongoDB(cfg.MongoDB, logger)
+	defer func() {
+		if err := mongoClient.Disconnect(context.Background()); err != nil {
+			logger.Error("Failed to disconnect MongoDB", zap.Error(err))
+		}
+	}()
 
 	// 创建依赖项
 	userDAO := dao.NewUserDAO(db)
 	userCache := cache.NewRedisUserCache(redisClient, "shop:user", 30*time.Minute)
 	userRepo := repository.NewUserRepository(userDAO, userCache)
+
+	// 创建JWT工具
+	jwtUtil := jwt.NewJWTUtil(cfg.JWT.Secret, cfg.JWT.AccessTokenTTL, cfg.JWT.RefreshTokenTTL)
+
+	// 创建认证服务
 	authService := service.NewAuthService(
 		userRepo,
-		redisClient,
-		cfg.JWT.Secret,
+		jwtUtil,
+		logger,
 		cfg.JWT.AccessTokenTTL,
 		cfg.JWT.RefreshTokenTTL,
-		cfg.JWT.VerificationTTL,
+		5,           // 最大登录失败次数
+		mongoClient, // 添加MongoDB客户端
 	)
-	userService := service.NewUserService(userRepo, userCache, authService)
 
-	// 启动gRPC服务
-	go startGRPCServer(cfg.Server.GRPC, userService, authService)
+	// 创建用户服务
+	userService := service.NewUserService(userRepo, authService, logger, mongoClient)
 
-	// 启动HTTP服务
-	startHTTPServer(cfg.Server.HTTP, userService, authService)
+	// 启动gRPC服务器
+	go startGRPCServer(cfg.Server.GRPCPort, authService, userService, logger)
+
+	// 启动HTTP服务器
+	go startHTTPServer(cfg.Server.HTTPPort, authService, userService, logger)
+
+	// 等待终止信号
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+	logger.Info("Shutting down server...")
+
+	// 优雅关闭
+	logger.Info("Server exited")
 }
 
 // 加载配置
 func loadConfig() *configs.Config {
-	viper.SetConfigName("config")
-	viper.SetConfigType("yaml")
-	viper.AddConfigPath("./configs")
-	viper.AddConfigPath(".")
-
-	if err := viper.ReadInConfig(); err != nil {
-		log.Fatalf("Error reading config file: %s", err)
+	cfg, err := configs.LoadConfig()
+	if err != nil {
+		log.Fatalf("Failed to load config: %v", err)
 	}
-
-	var cfg configs.Config
-	if err := viper.Unmarshal(&cfg); err != nil {
-		log.Fatalf("Error unmarshaling config: %s", err)
-	}
-
-	return &cfg
+	return cfg
 }
 
-// 初始化数据库连接
-func initDatabase(cfg configs.DatabaseConfig) *gorm.DB {
-	db, err := gorm.Open(mysql.Open(cfg.DSN), &gorm.Config{})
-	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+// 初始化日志
+func initLogger(cfg configs.LogConfig) *zap.Logger {
+	var zapLogger *zap.Logger
+	var err error
+
+	// 根据环境配置日志
+	if os.Getenv("APP_ENV") == "production" {
+		zapLogger, err = zap.NewProduction()
+	} else {
+		zapLogger, err = zap.NewDevelopment()
 	}
 
+	if err != nil {
+		log.Fatalf("Failed to initialize logger: %v", err)
+	}
+	return zapLogger
+}
+
+// 初始化数据库
+func initDatabase(cfg configs.DatabaseConfig, logger *zap.Logger) *gorm.DB {
+	// 配置GORM日志
+	gormLogger := logger.With(zap.String("component", "gorm"))
+
+	gormConfig := &gorm.Config{
+		Logger: logger.Sugar().Level(&logger.Sugar().Desugar().Core()),
+	}
+
+	// 连接数据库
+	db, err := gorm.Open(mysql.Open(cfg.DSN), gormConfig)
+	if err != nil {
+		logger.Fatal("Failed to connect to database", zap.Error(err))
+	}
+
+	// 配置连接池
 	sqlDB, err := db.DB()
 	if err != nil {
-		log.Fatalf("Failed to get database connection: %v", err)
+		logger.Fatal("Failed to get database connection", zap.Error(err))
 	}
 
-	// 设置连接池参数
-	sqlDB.SetMaxOpenConns(cfg.MaxOpenConns)
 	sqlDB.SetMaxIdleConns(cfg.MaxIdleConns)
+	sqlDB.SetMaxOpenConns(cfg.MaxOpenConns)
 	sqlDB.SetConnMaxLifetime(cfg.ConnMaxLifetime)
 
-	// 自动迁移数据库表
-	if err := db.AutoMigrate(&dao.User{}); err != nil {
-		log.Fatalf("Failed to migrate database: %v", err)
-	}
-
-	log.Println("Database connected and migrated successfully")
+	logger.Info("Database connection established")
 	return db
 }
 
-// 初始化Redis连接
-func initRedis(cfg configs.RedisConfig) *redis.Client {
-	redisClient := redis.NewClient(&redis.Options{
-		Addr:     cfg.Addr,
-		Password: cfg.Password,
-		DB:       cfg.DB,
+// 初始化Redis
+func initRedis(cfg configs.RedisConfig, logger *zap.Logger) *redis.Client {
+	client := redis.NewClient(&redis.Options{
+		Addr:         cfg.Addr,
+		Password:     cfg.Password,
+		DB:           cfg.DB,
+		PoolSize:     cfg.PoolSize,
+		MinIdleConns: cfg.MinIdleConns,
 	})
 
+	// 测试连接
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	// 测试连接
-	if err := redisClient.Ping(ctx).Err(); err != nil {
-		log.Fatalf("Failed to connect to Redis: %v", err)
+	if _, err := client.Ping(ctx).Result(); err != nil {
+		logger.Fatal("Failed to connect to Redis", zap.Error(err))
 	}
 
-	log.Println("Redis connected successfully")
-	return redisClient
+	logger.Info("Redis connection established")
+	return client
 }
 
-// 启动gRPC服务
-func startGRPCServer(cfg configs.GRPCConfig, userService service.UserService, authService service.AuthService) {
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", cfg.Port))
+// 初始化MongoDB
+func initMongoDB(cfg configs.MongoDBConfig, logger *zap.Logger) *mongo.Client {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	clientOptions := options.Client().ApplyURI(cfg.URI)
+
+	client, err := mongo.Connect(ctx, clientOptions)
 	if err != nil {
-		log.Fatalf("Failed to listen: %v", err)
+		logger.Fatal("Failed to connect to MongoDB", zap.Error(err))
 	}
 
-	grpcServer := grpc.NewServer()
-	userGRPCServer := grpcHandler.NewUserGRPCServer(userService, authService)
-	pb.RegisterUserServiceServer(grpcServer, userGRPCServer)
+	// 测试连接
+	err = client.Ping(ctx, nil)
+	if err != nil {
+		logger.Fatal("Failed to ping MongoDB", zap.Error(err))
+	}
 
-	log.Printf("gRPC server starting on port %d", cfg.Port)
+	logger.Info("MongoDB connection established")
+	return client
+}
+
+// 启动gRPC服务器
+func startGRPCServer(port string, authService service.AuthService, userService service.UserService, logger *zap.Logger) {
+	addr := fmt.Sprintf(":%s", port)
+	lis, err := net.Listen("tcp", addr)
+	if err != nil {
+		logger.Fatal("Failed to listen", zap.Error(err))
+	}
+
+	grpcServer := grpcHandler.NewUserGRPCServer(authService, userService)
+	proto.RegisterUserServiceServer(grpcServer, grpcHandler.NewUserGRPCServer(authService, userService))
+
+	logger.Info("Starting gRPC server", zap.String("addr", addr))
 	if err := grpcServer.Serve(lis); err != nil {
-		log.Fatalf("Failed to serve: %v", err)
+		logger.Fatal("Failed to serve gRPC", zap.Error(err))
 	}
 }
 
-// 启动HTTP服务
-func startHTTPServer(cfg configs.HTTPConfig, userService service.UserService, authService service.AuthService) {
-	router := gin.Default()
+// 启动HTTP服务器
+func startHTTPServer(port string, authService service.AuthService, userService service.UserService, logger *zap.Logger) {
+	addr := fmt.Sprintf(":%s", port)
+	httpServer := httpHandler.NewHTTPServer(addr, authService, userService, logger)
 
-	// 注册HTTP路由
-	userHandler := httpHandler.NewUserHandler(userService, authService)
-	userHandler.RegisterRoutes(router)
-
-	// 创建HTTP服务器
-	server := &http.Server{
-		Addr:         fmt.Sprintf(":%d", cfg.Port),
-		Handler:      router,
-		ReadTimeout:  cfg.ReadTimeout,
-		WriteTimeout: cfg.WriteTimeout,
-		IdleTimeout:  cfg.IdleTimeout,
-	}
-
-	// 优雅关闭
-	go func() {
-		quit := make(chan os.Signal, 1)
-		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-		<-quit
-		log.Println("Shutting down server...")
-
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-
-		if err := server.Shutdown(ctx); err != nil {
-			log.Fatalf("Server forced to shutdown: %v", err)
-		}
-
-		log.Println("Server exiting")
-	}()
-
-	log.Printf("HTTP server starting on port %d", cfg.Port)
-	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		log.Fatalf("Failed to start server: %v", err)
+	logger.Info("Starting HTTP server", zap.String("addr", addr))
+	if err := httpServer.Start(); err != nil {
+		logger.Fatal("Failed to serve HTTP", zap.Error(err))
 	}
 }

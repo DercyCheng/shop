@@ -19,6 +19,11 @@ redis:
   password: ""
   db: 0
 
+mongodb:
+  uri: "mongodb://mongodb:27017"
+  database: "user_logs"
+  timeout: 10s
+
 jwt:
   secret: "your-jwt-secret-key-should-be-very-long-and-secure"
   access_token_ttl: 15m

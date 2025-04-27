@@ -80,7 +80,7 @@ graph TD
         GoodsAPI[商品 API]
         OrderAPI[订单 API]
         InventoryAPI[库存 API]
-        UserOpAPI[用户操作 API]
+        ProfileAPI[个人信息 API]
         OssAPI[OSS API]
     end
 
@@ -89,7 +89,7 @@ graph TD
         GoodsSrv[商品服务]
         OrderSrv[订单服务]
         InventorySrv[库存服务]
-        UserOpSrv[用户操作服务]
+        ProfileSrv[个人信息服务]
     end
 
     subgraph 基础设施层
@@ -115,7 +115,7 @@ graph TD
     Gateway --> GoodsAPI
     Gateway --> OrderAPI
     Gateway --> InventoryAPI
-    Gateway --> UserOpAPI
+    Gateway --> ProfileAPI
     Gateway --> OssAPI
 
     %% API层连接服务层
@@ -123,64 +123,64 @@ graph TD
     GoodsAPI --> GoodsSrv
     OrderAPI --> OrderSrv
     InventoryAPI --> InventorySrv
-    UserOpAPI --> UserOpSrv
+    ProfileAPI --> ProfileSrv
 
     %% 服务层互相调用
     OrderSrv --> InventorySrv
     OrderSrv --> GoodsSrv
     OrderSrv --> UserSrv
     GoodsSrv --> InventorySrv
-    
+  
     %% 服务层连接基础设施
     UserSrv --> MySQL
     GoodsSrv --> MySQL
     OrderSrv --> MySQL
     InventorySrv --> MySQL
-    UserOpSrv --> MySQL
-    UserOpSrv --> MongoDB
-    
+    ProfileSrv --> MySQL
+    ProfileSrv --> MongoDB
+  
     GoodsSrv --> ES
     UserSrv --> Redis
     OrderSrv --> Redis
     InventorySrv --> Redis
-    
+  
     OrderSrv --> MQ
     InventorySrv --> MQ
-    
+  
     UserSrv -.-> Consul
     GoodsSrv -.-> Consul
     OrderSrv -.-> Consul
     InventorySrv -.-> Consul
-    UserOpSrv -.-> Consul
-    
+    ProfileSrv -.-> Consul
+  
     UserSrv -.-> Nacos
     GoodsSrv -.-> Nacos
     OrderSrv -.-> Nacos
     InventorySrv -.-> Nacos
-    UserOpSrv -.-> Nacos
-    
+    ProfileSrv -.-> Nacos
+  
     UserSrv -.-> Jaeger
     GoodsSrv -.-> Jaeger
     OrderSrv -.-> Jaeger
     InventorySrv -.-> Jaeger
-    UserOpSrv -.-> Jaeger
-    
+    ProfileSrv -.-> Jaeger
+  
     UserSrv -.-> Logs
     GoodsSrv -.-> Logs
     OrderSrv -.-> Logs
     InventorySrv -.-> Logs
-    UserOpSrv -.-> Logs
+    ProfileSrv -.-> Logs
 ```
 
 ### 分层设计
 
-| 层级         | 职责             | 组件                                                           |
-| ------------ | ---------------- | -------------------------------------------------------------- |
-| 网关层       | 请求路由与负载均衡 | Nginx、API Gateway                                             |
-| 基础设施层   | 提供基础服务支持 | MySQL、MongoDB、Redis、ElasticSearch、RocketMQ、Consul、Nacos、Zap  |
-| 服务层 (SRV) | 实现核心业务逻辑 | 用户服务、商品服务、库存服务、订单服务、用户操作服务           |
-| API 层 (Web) | 提供 HTTP 接口   | 用户 API、商品 API、订单 API、库存 API、用户操作 API、OSS 服务 |
-| 前端层       | 用户界面展示     | 管理后台 (Vue 3 + Element Plus)                                |
+| 层级         | 职责               | 组件                                                               |
+| ------------ | ------------------ | ------------------------------------------------------------------ |
+| 网关层       | 请求路由与负载均衡 | Nginx、API Gateway                                                 |
+| 基础设施层   | 提供基础服务支持   | MySQL、MongoDB、Redis、ElasticSearch、RocketMQ、Consul、Nacos、Zap |
+| 服务层 (SRV) | 实现核心业务逻辑   | 用户服务、商品服务、库存服务、订单服务、个人信息服务               |
+| API 层 (Web) | 提供 HTTP 接口     | 用户 API、商品 API、订单 API、库存 API、个人信息 API、OSS 服务     |
+| 前端层       | 用户界面展示       | 管理后台 (Vue 3 + Element Plus)                                    |
 
 ### 服务通信
 
@@ -215,7 +215,7 @@ Shop 实现了电商系统所需的全部核心功能：
 | 商品服务 | 商品管理、分类、品牌、属性 | ES全文检索、多级分类、规格管理        |
 | 库存服务 | 库存管理、库存锁定/释放    | 分布式锁、乐观并发控制、库存预警      |
 | 订单服务 | 购物车、订单管理、支付集成 | 分布式事务、状态机、超时取消          |
-| 用户操作 | 收藏、地址管理、消息       | 地址结构化、收藏同步                  |
+| 个人信息 | 收藏、地址管理、消息       | 地址结构化、收藏同步                  |
 | OSS服务  | 文件上传、图片处理         | 对象存储、图片压缩、水印              |
 
 ## 💻 技术栈
@@ -263,24 +263,24 @@ graph TD
 
 ### 后端核心技术详解
 
-| 技术                | 说明                                       | 应用场景                                 |
-| ------------------- | ------------------------------------------ | ---------------------------------------- |
-| Go                  | 核心开发语言                               | 所有微服务开发                           |
-| gRPC                | 高性能RPC框架                              | 微服务间通信                             |
-| Gin                 | HTTP Web框架                               | API接口开发                              |
-| GORM                | ORM框架                                    | 数据库操作                               |
-| MySQL               | 关系型数据库                               | 核心业务数据存储                         |
-| MongoDB             | 文档型数据库                               | 日志、用户操作历史等非结构化数据存储     |
-| Redis               | 内存数据库                                 | 缓存、分布式锁、计数器                   |
-| ElasticSearch       | 全文搜索引擎                               | 商品搜索、日志分析                       |
-| Consul              | 服务注册与发现                             | 服务注册、健康检查、配置共享             |
-| Nacos               | 服务发现和配置管理                         | 动态配置管理、服务注册                   |
-| RocketMQ            | 分布式消息队列                             | 异步通信、事件驱动、削峰填谷             |
-| Nginx               | 高性能HTTP和反向代理服务器                 | 负载均衡、静态资源、API网关              |
-| Swagger             | API文档工具                                | API接口文档生成与测试                    |
-| Jaeger              | 分布式追踪系统                             | 微服务调用链路追踪                       |
-| Wire                | 编译期依赖注入                             | 依赖管理、代码解耦                       |
-| Zap                 | 高性能日志库                               | 结构化日志记录                           |
+| 技术          | 说明                       | 应用场景                             |
+| ------------- | -------------------------- | ------------------------------------ |
+| Go            | 核心开发语言               | 所有微服务开发                       |
+| gRPC          | 高性能RPC框架              | 微服务间通信                         |
+| Gin           | HTTP Web框架               | API接口开发                          |
+| GORM          | ORM框架                    | 数据库操作                           |
+| MySQL         | 关系型数据库               | 核心业务数据存储                     |
+| MongoDB       | 文档型数据库               | 日志、用户操作历史等非结构化数据存储 |
+| Redis         | 内存数据库                 | 缓存、分布式锁、计数器               |
+| ElasticSearch | 全文搜索引擎               | 商品搜索、日志分析                   |
+| Consul        | 服务注册与发现             | 服务注册、健康检查、配置共享         |
+| Nacos         | 服务发现和配置管理         | 动态配置管理、服务注册               |
+| RocketMQ      | 分布式消息队列             | 异步通信、事件驱动、削峰填谷         |
+| Nginx         | 高性能HTTP和反向代理服务器 | 负载均衡、静态资源、API网关          |
+| Swagger       | API文档工具                | API接口文档生成与测试                |
+| Jaeger        | 分布式追踪系统             | 微服务调用链路追踪                   |
+| Wire          | 编译期依赖注入             | 依赖管理、代码解耦                   |
+| Zap           | 高性能日志库               | 结构化日志记录                       |
 
 ## 📁 项目结构
 
@@ -290,33 +290,77 @@ shop/
 ├── Dockerfile          # Docker 构建文件
 ├── README.md           # 项目说明
 ├── doc/                # 详细文档
+│   ├── interview.md    # 面试指南
+│   ├── 用户服务.md      # 用户服务文档
+│   ├── 商品服务.md      # 商品服务文档
+│   ├── 订单服务.md      # 订单服务文档
+│   ├── 库存服务.md      # 库存服务文档
+│   ├── 个人信息服务.md   # 个人信息服务文档
+│   └── 系统架构与数据流图.md # 系统架构文档
+├── backend/            # 后端服务根目录
+│   ├── go.mod          # Go模块定义
+│   ├── go.sum          # Go依赖版本锁定
+│   ├── configs/        # 全局通用配置
+│   │   ├── mysql/      # MySQL配置
+│   │   ├── redis/      # Redis配置
+│   │   ├── consul/     # Consul配置
+│   │   ├── nacos/      # Nacos配置
+│   │   └── jaeger/     # Jaeger配置
+│   ├── pkg/            # 全局共享包
+│   │   ├── consul/     # Consul工具
+│   │   ├── nacos/      # Nacos工具
+│   │   ├── grpc/       # gRPC工具
+│   │   ├── client/     # 服务客户端
+│   │   ├── logger/     # 日志工具
+│   │   ├── database/   # 数据库工具
+│   │   ├── middleware/ # 中间件
+│   │   ├── auth/       # 认证工具
+│   │   ├── jwt/        # JWT工具
+│   │   └── util/       # 通用工具函数
+│   ├── script/         # 全局脚本
+│   │   ├── build.sh    # 构建脚本
+│   │   ├── deploy.sh   # 部署脚本
+│   │   ├── test.sh     # 测试脚本
+│   │   └── mysql/      # 数据库初始化脚本
+│   │       ├── user/   # 用户服务SQL脚本
+│   │       ├── product/# 商品服务SQL脚本
+│   │       ├── inventory/# 库存服务SQL脚本
+│   │       └── profile/# 个人信息SQL脚本
+│   ├── user/           # 用户服务
+│   │   ├── cmd/                # 应用入口
+│   │   │   └── main.go         # 服务启动入口
+│   │   ├── configs/            # 服务特定配置
+│   │   │   ├── config.go       # 配置加载
+│   │   │   └── config.yaml     # 配置文件
+│   │   ├── api/                # API定义
+│   │   │   ├── common/         # 通用定义
+│   │   │   └── proto/          # Protocol Buffers
+│   │   │       └── user.proto  # 用户服务接口定义
+│   │   └── internal/           # 内部实现
+│   │       ├── domain/         # 领域模型
+│   │       │   ├── entity/     # 实体定义
+│   │       │   └── valueobject/ # 值对象
+│   │       ├── repository/     # 数据仓储层
+│   │       │   ├── user_repository.go   # 仓储接口
+│   │       │   ├── user_repository_impl.go # 实现
+│   │       │   ├── cache/      # 缓存实现
+│   │       │   └── dao/        # 数据访问对象
+│   │       ├── service/        # 业务服务层
+│   │       │   ├── auth_service.go      # 认证服务接口
+│   │       │   ├── auth_service_impl.go # 认证服务实现
+│   │       │   ├── user_service.go      # 用户服务接口
+│   │       │   └── user_service_impl.go # 用户服务实现
+│   │       └── web/            # Web交互层
+│   │           ├── grpc/       # gRPC服务实现
+│   │           └── http/       # HTTP服务实现
+│   ├── product/        # 商品服务（结构类似user服务）
+│   ├── order/          # 订单服务（结构类似user服务）
+│   ├── inventory/      # 库存服务（结构类似user服务）
+│   └── profile/        # 个人信息服务（结构类似user服务）
 ├── api-gateway/        # API 网关
 │   ├── configs/        # 网关配置
 │   ├── middleware/     # 网关中间件
 │   └── routes/         # 路由定义
-├── backend/            # 后端服务
-│   ├── user/           # 用户服务
-│   │   ├── configs/    # 配置文件
-│   │   ├── api/        # API定义
-│   │   │   └── proto/      # Protocol Buffers
-│   │   ├── internal/   # 内部实现
-│   │   │   ├── domain/     # 领域模型
-│   │   │   ├── repository/ # 数据访问层
-│   │   │   ├── service/    # 业务逻辑层
-│   │   │   └── web/        # Web API层
-│   │   │       └── swagger/   # Swagger 文档
-│   │   ├── pkg/        # 可共享包
-│   │   │   └── logger/     # Zap 日志配置
-│   │   └── script/     # 脚本文件
-│   ├── product/        # 商品服务
-│   ├── order/          # 订单服务
-│   ├── inventory/      # 库存服务
-│   └── userop/         # 用户操作服务
-├── shared/             # 共享库
-│   ├── consul/         # Consul 工具
-│   ├── nacos/          # Nacos 工具
-│   ├── grpc/           # gRPC 工具
-│   └── logger/         # Zap 日志工具
 └── frontend/           # 前端应用
 ```
 
@@ -344,18 +388,6 @@ docker-compose up -d
 
 ### 本地开发环境设置
 
-```bash
-# 启动基础设施
-docker-compose up -d mysql mongodb redis nacos consul jaeger rocketmq nginx
-
-# 启动服务层
-cd scripts
-./start.sh start_srv
-
-# 启动 API 层
-./start.sh start_api
-```
-
 详细的部署文档请参考 [环境搭建指南](./doc/环境搭建.md)。
 
 ## 📝 接口文档
@@ -365,8 +397,7 @@ API 文档通过 Swagger UI 提供，启动服务后可访问：
 - 用户服务: http://localhost:8021/swagger/index.html
 - 商品服务: http://localhost:8022/swagger/index.html
 - 订单服务: http://localhost:8023/swagger/index.html
-- 用户操作: http://localhost:8024/swagger/index.html
-- OSS 服务: http://localhost:8025/swagger/index.html
+- 个人信息: http://localhost:8024/swagger/index.html
 
 ### Swagger 集成
 
@@ -441,8 +472,7 @@ Shop 项目提供了详细的系统文档，帮助开发者更好地理解和扩
   - 用户服务: http://localhost:8021/swagger/index.html
   - 商品服务: http://localhost:8022/swagger/index.html
   - 订单服务: http://localhost:8023/swagger/index.html
-  - 用户操作: http://localhost:8024/swagger/index.html
-  - OSS 服务: http://localhost:8025/swagger/index.html
+  - 个人信息: http://localhost:8024/swagger/index.html
 
 ### 微服务文档
 
@@ -450,7 +480,7 @@ Shop 项目提供了详细的系统文档，帮助开发者更好地理解和扩
 - [商品服务](./doc/商品服务.md) - 商品管理、分类、品牌等功能
 - [订单服务](./doc/订单服务.md) - 订单处理、支付集成等
 - [库存服务](./doc/库存服务.md) - 库存管理、锁定释放等
-- [用户操作服务](./doc/用户操作服务.md) - 用户收藏、地址管理等
+- [个人信息服务](./doc/个人信息服务.md) - 用户收藏、地址管理等
 
 ### 开发与部署
 
