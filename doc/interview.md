@@ -12,6 +12,8 @@
 6. [个人贡献](#6-个人贡献)
 7. [项目收获](#7-项目收获)
 8. [回答面试常见问题](#8-回答面试常见问题)
+9. [系统集成测试策略](#9-系统集成测试策略)
+10. [API 版本管理策略](#10-API-版本管理策略)
 
 ## 1. 项目介绍
 
@@ -282,3 +284,239 @@
 6. **监控预警**：实时监控系统负载，提前感知压力并扩容
 
 在实际运行中，系统成功支撑了每日数万订单的处理，峰值期间仍能保持稳定运行。"
+
+## 9. 系统集成测试策略
+
+在 Shop 电商微服务系统中，我们实施了全面的集成测试策略，以确保各个微服务能够协同工作并正确处理端到端的业务流程。
+
+### 9.1 测试类型与范围
+
+我们的集成测试主要包括以下类型：
+
+1. **微服务间通信测试**：
+
+   - 服务接口契约测试（使用 gRPC 的 Mock 服务）
+   - 验证消息队列生产者和消费者的正确交互
+   - 测试服务发现和注册机制
+
+2. **数据流测试**：
+
+   - 追踪核心业务流程中的数据流转
+   - 验证分布式事务的正确执行
+   - 确保数据一致性在各服务间得到维护
+
+3. **端到端业务流程测试**：
+   - 用户注册到下单的完整流程测试
+   - 支付和库存变更的协调测试
+   - 客户退单流程测试
+
+### 9.2 测试环境与工具
+
+为支持高效的集成测试，我们建立了专用的测试基础设施：
+
+1. **测试环境**：
+
+   - 使用 Docker Compose 构建隔离的测试环境
+   - 自动化环境配置和依赖服务启动
+   - 支持并行运行多个测试实例
+
+2. **测试工具链**：
+
+   - Go 测试框架：标准库 `testing` 包和 `testify` 库
+   - API 自动化测试：Postman + Newman
+   - 性能测试：Locust/JMeter
+   - Mock 服务：gomock 和自定义 mock 服务器
+
+3. **测试数据管理**：
+   - 每次测试前使用种子数据初始化数据库
+   - 使用事务包装测试，确保数据隔离
+   - 测试结束后清理测试数据
+
+### 9.3 集成测试实现示例
+
+以下是我们订单创建流程的集成测试示例：
+
+```go
+// 订单创建流程集成测试
+func TestOrderCreationFlow(t *testing.T) {
+    // 设置：启动所需的服务和依赖
+    testEnv := setupTestEnvironment()
+    defer testEnv.Cleanup()
+
+    // 测试数据准备
+    user := createTestUser(t)
+    product := createTestProduct(t)
+    addProductToInventory(t, product.ID, 10)
+
+    // 执行测试：创建订单
+    orderReq := &proto.CreateOrderRequest{
+        UserId: user.ID,
+        Items: []*proto.OrderItem{
+            {ProductId: product.ID, Quantity: 2},
+        },
+        Address: &proto.Address{/*...*/},
+    }
+
+    orderResp, err := testEnv.OrderClient.CreateOrder(context.Background(), orderReq)
+    require.NoError(t, err)
+    require.NotEmpty(t, orderResp.OrderId)
+
+    // 验证：订单创建成功
+    order, err := getOrder(t, orderResp.OrderId)
+    require.NoError(t, err)
+    assert.Equal(t, user.ID, order.UserId)
+    assert.Equal(t, 1, len(order.Items))
+    assert.Equal(t, product.ID, order.Items[0].ProductId)
+
+    // 验证：库存已被锁定
+    inventory, err := getInventory(t, product.ID)
+    require.NoError(t, err)
+    assert.Equal(t, int64(8), inventory.Available) // 10 - 2 = 8
+    assert.Equal(t, int64(2), inventory.Locked)
+
+    // 验证：消息已发送到支付队列
+    msg, err := testEnv.PaymentQueueConsumer.ConsumeOne(5 * time.Second)
+    require.NoError(t, err)
+    assert.Equal(t, orderResp.OrderId, msg.OrderId)
+}
+```
+
+### 9.4 持续集成与测试自动化
+
+我们的集成测试深度集成到 CI/CD 流水线中：
+
+1. **CI 流程中的测试执行**：
+
+   - 每次代码推送都触发单元测试和集成测试
+   - 在专用测试环境中运行完整测试套件
+   - 测试报告自动生成和归档
+
+2. **测试覆盖率监控**：
+
+   - 跟踪并显示代码测试覆盖率变化趋势
+   - 对核心业务流程保持高覆盖率（>80%）
+   - 不允许覆盖率下降的代码合并
+
+3. **测试驱动开发实践**：
+   - 新功能开发前先编写测试用例
+   - 代码审查中重点审查测试代码质量
+   - 缺陷修复必须包含相应的测试案例
+
+## 10. API 版本管理策略
+
+在微服务架构中，API 的变更和版本控制是保证系统可维护性的关键。我们采用了系统化的 API 版本管理策略。
+
+### 10.1 版本命名规范
+
+我们遵循语义化版本控制原则（SemVer）：
+
+1. **主要版本（Major）**：不兼容的 API 修改
+2. **次要版本（Minor）**：向后兼容的功能新增
+3. **补丁版本（Patch）**：向后兼容的问题修复
+
+服务版本格式示例：`v1.2.3`
+
+### 10.2 API 版本策略
+
+在 Shop 系统中，我们采用以下 API 版本控制策略：
+
+1. **URI 路径版本控制**：
+
+   ```
+   // RESTful API
+   /api/v1/products
+   /api/v2/products
+   ```
+
+2. **gRPC 包命名版本控制**：
+
+   ```protobuf
+   // Protocol Buffers
+   package shop.product.v1;
+   package shop.product.v2;
+   ```
+
+3. **兼容性策略**：
+   - 一个服务同时支持最近两个版本的 API
+   - 字段只能新增不能删除，删除需用弃用标记
+   - API 变更必须向后兼容，新增参数必须设默认值
+
+### 10.3 版本管理实现
+
+#### gRPC 服务版本控制
+
+```protobuf
+// ProductService v1
+syntax = "proto3";
+package shop.product.v1;
+option go_package = "shop/product/v1";
+
+service ProductService {
+  rpc GetProduct(GetProductRequest) returns (GetProductResponse);
+  // ...
+}
+```
+
+```protobuf
+// ProductService v2 新增了产品搜索功能
+syntax = "proto3";
+package shop.product.v2;
+option go_package = "shop/product/v2";
+
+service ProductService {
+  rpc GetProduct(GetProductRequest) returns (GetProductResponse);
+  rpc SearchProducts(SearchProductsRequest) returns (SearchProductsResponse); // 新增
+  // ...
+}
+```
+
+服务实现中维护多个版本：
+
+```go
+// v1 版本服务实现
+type ProductServiceV1 struct {
+    // ...
+}
+
+func (s *ProductServiceV1) GetProduct(ctx context.Context, req *v1.GetProductRequest) (*v1.GetProductResponse, error) {
+    // v1 实现
+}
+
+// v2 版本服务实现
+type ProductServiceV2 struct {
+    // 复用 v1 的一些功能
+    v1Service *ProductServiceV1
+}
+
+func (s *ProductServiceV2) GetProduct(ctx context.Context, req *v2.GetProductRequest) (*v2.GetProductResponse, error) {
+    // 可能转换为 v1 格式并调用 v1 实现
+    v1Req := convertToV1Request(req)
+    v1Resp, err := s.v1Service.GetProduct(ctx, v1Req)
+    if err != nil {
+        return nil, err
+    }
+    return convertToV2Response(v1Resp), nil
+}
+
+func (s *ProductServiceV2) SearchProducts(ctx context.Context, req *v2.SearchProductsRequest) (*v2.SearchProductsResponse, error) {
+    // v2 新功能实现
+}
+```
+
+### 10.4 版本弃用与迁移
+
+为确保系统的可维护性，我们制定了严格的版本弃用流程：
+
+1. **弃用公告**：
+
+   - 在弃用 API 前至少 6 个月发布公告
+   - 提供详细的迁移指南和示例代码
+
+2. **平滑迁移**：
+
+   - 在弃用期间同时支持旧版和新版 API
+   - 提供迁移工具辅助客户端代码升级
+
+3. **监控策略**：
+   - 跟踪每个版本 API 的使用情况
+   - 基于使用数据制定合理的弃用时间表
