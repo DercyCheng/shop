@@ -1,7 +1,0 @@
-service_name: product-service
-
-server:
-  port: 50051
-
-database:
-  dsn: root:password@tcp(mysql:3306)/shop_product?charset=utf8mb4&parseTime=True&loc=Local

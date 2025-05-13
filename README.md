@@ -130,7 +130,7 @@ graph TD
     OrderSrv --> GoodsSrv
     OrderSrv --> UserSrv
     GoodsSrv --> InventorySrv
-  
+
     %% 服务层连接基础设施
     UserSrv --> MySQL
     GoodsSrv --> MySQL
@@ -138,33 +138,33 @@ graph TD
     InventorySrv --> MySQL
     ProfileSrv --> MySQL
     ProfileSrv --> MongoDB
-  
+
     GoodsSrv --> ES
     UserSrv --> Redis
     OrderSrv --> Redis
     InventorySrv --> Redis
-  
+
     OrderSrv --> MQ
     InventorySrv --> MQ
-  
+
     UserSrv -.-> Consul
     GoodsSrv -.-> Consul
     OrderSrv -.-> Consul
     InventorySrv -.-> Consul
     ProfileSrv -.-> Consul
-  
+
     UserSrv -.-> Nacos
     GoodsSrv -.-> Nacos
     OrderSrv -.-> Nacos
     InventorySrv -.-> Nacos
     ProfileSrv -.-> Nacos
-  
+
     UserSrv -.-> Jaeger
     GoodsSrv -.-> Jaeger
     OrderSrv -.-> Jaeger
     InventorySrv -.-> Jaeger
     ProfileSrv -.-> Jaeger
-  
+
     UserSrv -.-> Logs
     GoodsSrv -.-> Logs
     OrderSrv -.-> Logs
@@ -192,7 +192,7 @@ sequenceDiagram
     participant Order Service
     participant Inventory Service
     participant MQ
-  
+
     Client->>API Gateway: 创建订单请求
     API Gateway->>Order Service: gRPC: 创建订单
     Order Service->>Inventory Service: gRPC: 锁定库存
@@ -209,14 +209,14 @@ Shop 实现了电商系统所需的全部核心功能：
 
 ### 模块功能对比
 
-| 功能模块 | 主要特性                   | 技术亮点                              |
-| -------- | -------------------------- | ------------------------------------- |
-| 用户服务 | 注册、登录、鉴权、个人中心 | JWT认证、RBAC权限模型、手机验证码登录 |
-| 商品服务 | 商品管理、分类、品牌、属性 | ES全文检索、多级分类、规格管理        |
-| 库存服务 | 库存管理、库存锁定/释放    | 分布式锁、乐观并发控制、库存预警      |
-| 订单服务 | 购物车、订单管理、支付集成 | 分布式事务、状态机、超时取消          |
-| 个人信息 | 收藏、地址管理、消息       | 地址结构化、收藏同步                  |
-| OSS服务  | 文件上传、图片处理         | 对象存储、图片压缩、水印              |
+| 功能模块 | 主要特性                   | 技术亮点                                |
+| -------- | -------------------------- | --------------------------------------- |
+| 用户服务 | 注册、登录、鉴权、个人中心 | JWT 认证、RBAC 权限模型、手机验证码登录 |
+| 商品服务 | 商品管理、分类、品牌、属性 | ES 全文检索、多级分类、规格管理         |
+| 库存服务 | 库存管理、库存锁定/释放    | 分布式锁、乐观并发控制、库存预警        |
+| 订单服务 | 购物车、订单管理、支付集成 | 分布式事务、状态机、超时取消            |
+| 个人信息 | 收藏、地址管理、消息       | 地址结构化、收藏同步                    |
+| OSS 服务 | 文件上传、图片处理         | 对象存储、图片压缩、水印                |
 
 ## 💻 技术栈
 
@@ -232,14 +232,14 @@ graph TD
     Go --> Wire[Wire 依赖注入]
     Go --> Swagger[Swagger 文档]
     Go --> Zap[Zap 日志]
-  
+
     subgraph 数据存储
         MySQL[(MySQL)]
         MongoDB[(MongoDB)]
         Redis[(Redis)]
         ES[(ElasticSearch)]
     end
-  
+
     subgraph 中间件
         Consul[Consul 服务发现]
         Nacos[Nacos 配置中心]
@@ -247,7 +247,7 @@ graph TD
         Jaeger[Jaeger 链路追踪]
         Nginx[Nginx 反向代理]
     end
-  
+
     GRPC --> Consul
     GRPC --> Nacos
     Gin --> GRPC
@@ -263,24 +263,24 @@ graph TD
 
 ### 后端核心技术详解
 
-| 技术          | 说明                       | 应用场景                             |
-| ------------- | -------------------------- | ------------------------------------ |
-| Go            | 核心开发语言               | 所有微服务开发                       |
-| gRPC          | 高性能RPC框架              | 微服务间通信                         |
-| Gin           | HTTP Web框架               | API接口开发                          |
-| GORM          | ORM框架                    | 数据库操作                           |
-| MySQL         | 关系型数据库               | 核心业务数据存储                     |
-| MongoDB       | 文档型数据库               | 日志、用户操作历史等非结构化数据存储 |
-| Redis         | 内存数据库                 | 缓存、分布式锁、计数器               |
-| ElasticSearch | 全文搜索引擎               | 商品搜索、日志分析                   |
-| Consul        | 服务注册与发现             | 服务注册、健康检查、配置共享         |
-| Nacos         | 服务发现和配置管理         | 动态配置管理、服务注册               |
-| RocketMQ      | 分布式消息队列             | 异步通信、事件驱动、削峰填谷         |
-| Nginx         | 高性能HTTP和反向代理服务器 | 负载均衡、静态资源、API网关          |
-| Swagger       | API文档工具                | API接口文档生成与测试                |
-| Jaeger        | 分布式追踪系统             | 微服务调用链路追踪                   |
-| Wire          | 编译期依赖注入             | 依赖管理、代码解耦                   |
-| Zap           | 高性能日志库               | 结构化日志记录                       |
+| 技术          | 说明                         | 应用场景                             |
+| ------------- | ---------------------------- | ------------------------------------ |
+| Go            | 核心开发语言                 | 所有微服务开发                       |
+| gRPC          | 高性能 RPC 框架              | 微服务间通信                         |
+| Gin           | HTTP Web 框架                | API 接口开发                         |
+| GORM          | ORM 框架                     | 数据库操作                           |
+| MySQL         | 关系型数据库                 | 核心业务数据存储                     |
+| MongoDB       | 文档型数据库                 | 日志、用户操作历史等非结构化数据存储 |
+| Redis         | 内存数据库                   | 缓存、分布式锁、计数器               |
+| ElasticSearch | 全文搜索引擎                 | 商品搜索、日志分析                   |
+| Consul        | 服务注册与发现               | 服务注册、健康检查、配置共享         |
+| Nacos         | 服务发现和配置管理           | 动态配置管理、服务注册               |
+| RocketMQ      | 分布式消息队列               | 异步通信、事件驱动、削峰填谷         |
+| Nginx         | 高性能 HTTP 和反向代理服务器 | 负载均衡、静态资源、API 网关         |
+| Swagger       | API 文档工具                 | API 接口文档生成与测试               |
+| Jaeger        | 分布式追踪系统               | 微服务调用链路追踪                   |
+| Wire          | 编译期依赖注入               | 依赖管理、代码解耦                   |
+| Zap           | 高性能日志库                 | 结构化日志记录                       |
 
 ## 📁 项目结构
 
@@ -425,12 +425,12 @@ python stress_test.py -s user -d 30 -c 200 -t 8
 
 ### 性能测试结果
 
-| 服务名称 | QPS (1000并发) | 平均响应时间 | P99响应时间 |
-| -------- | -------------- | ------------ | ----------- |
-| 用户服务 | 5,000+         | < 20ms       | < 50ms      |
-| 商品服务 | 3,000+         | < 30ms       | < 70ms      |
-| 订单服务 | 2,000+         | < 40ms       | < 90ms      |
-| 库存服务 | 4,000+         | < 25ms       | < 60ms      |
+| 服务名称 | QPS (1000 并发) | 平均响应时间 | P99 响应时间 |
+| -------- | --------------- | ------------ | ------------ |
+| 用户服务 | 5,000+          | < 20ms       | < 50ms       |
+| 商品服务 | 3,000+          | < 30ms       | < 70ms       |
+| 订单服务 | 2,000+          | < 40ms       | < 90ms       |
+| 库存服务 | 4,000+          | < 25ms       | < 60ms       |
 
 ## 🔧 开发指南
 
@@ -465,10 +465,10 @@ Shop 项目提供了详细的系统文档，帮助开发者更好地理解和扩
 - [系统架构与数据流图](./doc/系统架构与数据流图.md) - 详细的系统组件关系图和数据流转过程
 - [架构决策记录(ADR)](./doc/架构决策记录.md) - 记录重要架构决策的原因和影响
 
-### API文档
+### API 文档
 
-- [API文档规范](./doc/API文档规范.md) - API开发和文档编写规范，包括Swagger使用指南
-- Swagger UI接口文档（启动相应服务后访问）:
+- [API 文档规范](./doc/API文档规范.md) - API 开发和文档编写规范，包括 Swagger 使用指南
+- Swagger UI 接口文档（启动相应服务后访问）:
   - 用户服务: http://localhost:8021/swagger/index.html
   - 商品服务: http://localhost:8022/swagger/index.html
   - 订单服务: http://localhost:8023/swagger/index.html
