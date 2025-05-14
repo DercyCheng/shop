@@ -1,0 +1,97 @@
+syntax = "proto3";
+package user;
+
+option go_package = "shop/backend/user/api/proto";
+
+// UserService 用户服务接口
+service UserService {
+  // 验证Token
+  rpc ValidateToken(ValidateTokenRequest) returns (ValidateTokenResponse) {}
+
+  // 获取用户信息
+  rpc GetUserInfo(GetUserInfoRequest) returns (GetUserInfoResponse) {}
+
+  // 刷新Token
+  rpc RefreshToken(RefreshTokenRequest) returns (RefreshTokenResponse) {}
+
+  // 登录
+  rpc Login(LoginRequest) returns (LoginResponse) {}
+
+  // 注册
+  rpc Register(RegisterRequest) returns (RegisterResponse) {}
+}
+
+// 验证Token请求
+message ValidateTokenRequest { string token = 1; }
+
+// 验证Token响应
+message ValidateTokenResponse {
+  int64 user_id = 1;
+  string role = 2;
+  bool valid = 3;
+}
+
+// 获取用户信息请求
+message GetUserInfoRequest { int64 user_id = 1; }
+
+// 获取用户信息响应
+message GetUserInfoResponse {
+  int64 user_id = 1;
+  string mobile = 2;
+  string nickname = 3;
+  string avatar = 4;
+  string gender = 5;
+  int32 role = 6;
+  int32 status = 7;
+  int64 created_at = 8;
+}
+
+// 刷新Token请求
+message RefreshTokenRequest { string refresh_token = 1; }
+
+// 刷新Token响应
+message RefreshTokenResponse {
+  string token = 1;
+  string refresh_token = 2;
+  int64 expires_in = 3;
+}
+
+// 登录请求
+message LoginRequest {
+  string mobile = 1;
+  string password = 2;
+  string verification_code = 3;
+  int32 login_type = 4; // 1: 密码登录, 2: 验证码登录, 3: 微信登录
+}
+
+// 用户信息
+message UserInfo {
+  int64 user_id = 1;
+  string mobile = 2;
+  string nickname = 3;
+  string avatar = 4;
+  int32 role = 5;
+}
+
+// 登录响应
+message LoginResponse {
+  string token = 1;
+  string refresh_token = 2;
+  int64 expires_in = 3;
+  UserInfo user_info = 4;
+}
+
+// 注册请求
+message RegisterRequest {
+  string mobile = 1;
+  string password = 2;
+  string nickname = 3;
+  string verification_code = 4;
+}
+
+// 注册响应
+message RegisterResponse {
+  int64 user_id = 1;
+  string mobile = 2;
+  string nickname = 3;
+}

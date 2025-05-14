@@ -1,0 +1,50 @@
+server:
+  name: "inventory-service"
+  host: "0.0.0.0"
+  port: 8000
+  read_timeout: 10s
+  write_timeout: 10s
+  grpc:
+    port: 50053
+
+database:
+  driver: "mysql"
+  host: "localhost"
+  port: 3306
+  user: "root"
+  password: "root"
+  dbname: "shop_inventory"
+  charset: "utf8mb4"
+
+redis:
+  host: "localhost"
+  port: 6379
+  password: ""
+  db: 0
+
+logger:
+  level: "debug"
+  format: "json"
+  output_file: "logs/inventory.log"
+  max_size: 100
+  max_backups: 10
+  max_age: 30
+  compress: true
+
+registry:
+  type: "consul"
+  interval: 10
+  consul:
+    address: "localhost:8500"
+  nacos:
+    address: "localhost"
+    port: 8848
+    namespace: "public"
+    user: "nacos"
+    password: "nacos"
+
+inventory:
+  lock_timeout: 1800 # 库存锁定超时时间（秒），默认30分钟
+  default_warehouse_id: 1 # 默认仓库ID
+  enable_cache: true # 是否启用缓存
+  cache_ttl: 300 # 缓存过期时间（秒），默认5分钟

@@ -28,12 +28,6 @@ go.work.sum
 .idea/
 test/
 bin/
-pkg/
-.github/
 .DS_Store
 .git/
-Pro/
-geektime-basic-go/
-*-fe/
-
 node_modules/

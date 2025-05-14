@@ -1,0 +1,28 @@
+server:
+  name: user-service
+  host: 127.0.0.1
+  port: 50051
+
+mysql:
+  host: 127.0.0.1
+  port: 3306
+  user: root
+  password: password
+  database: shop_user
+
+redis:
+  host: 127.0.0.1
+  port: 6379
+  password: ""
+  db: 0
+
+consul:
+  address: 127.0.0.1:8500
+
+jwt:
+  secret: "shop-user-service-jwt-secret-key"
+  expireTime: 24 # 24小时
+  issuer: "shop.user.service"
+
+logLevel: debug
+logFile: "./logs/user-service.log"

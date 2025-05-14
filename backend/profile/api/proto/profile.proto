@@ -1,0 +1,282 @@
+syntax = "proto3";
+package profile;
+
+option go_package = "shop/backend/profile/api/proto";
+
+// ProfileService 个人信息服务接口
+service ProfileService {
+  // 收藏相关接口
+  rpc ListFavorites(ListFavoritesRequest) returns (ListFavoritesResponse) {}
+  rpc AddFavorite(AddFavoriteRequest) returns (AddFavoriteResponse) {}
+  rpc RemoveFavorite(RemoveFavoriteRequest) returns (RemoveFavoriteResponse) {}
+  rpc IsFavorite(IsFavoriteRequest) returns (IsFavoriteResponse) {}
+  rpc SetPriceNotification(SetPriceNotificationRequest)
+      returns (SetPriceNotificationResponse) {}
+
+  // 地址相关接口
+  rpc ListAddresses(ListAddressesRequest) returns (ListAddressesResponse) {}
+  rpc GetAddress(GetAddressRequest) returns (GetAddressResponse) {}
+  rpc AddAddress(AddAddressRequest) returns (AddAddressResponse) {}
+  rpc UpdateAddress(UpdateAddressRequest) returns (UpdateAddressResponse) {}
+  rpc DeleteAddress(DeleteAddressRequest) returns (DeleteAddressResponse) {}
+  rpc SetDefaultAddress(SetDefaultAddressRequest)
+      returns (SetDefaultAddressResponse) {}
+  rpc GetDefaultAddress(GetDefaultAddressRequest)
+      returns (GetDefaultAddressResponse) {}
+
+  // 反馈相关接口
+  rpc ListFeedbacks(ListFeedbacksRequest) returns (ListFeedbacksResponse) {}
+  rpc GetFeedback(GetFeedbackRequest) returns (GetFeedbackResponse) {}
+  rpc SubmitFeedback(SubmitFeedbackRequest) returns (SubmitFeedbackResponse) {}
+  rpc UpdateFeedback(UpdateFeedbackRequest) returns (UpdateFeedbackResponse) {}
+  rpc DeleteFeedback(DeleteFeedbackRequest) returns (DeleteFeedbackResponse) {}
+
+  // 浏览历史相关接口
+  rpc GetBrowsingHistories(GetBrowsingHistoriesRequest)
+      returns (GetBrowsingHistoriesResponse) {}
+  rpc AddBrowsingHistory(AddBrowsingHistoryRequest)
+      returns (AddBrowsingHistoryResponse) {}
+  rpc RemoveBrowsingHistories(RemoveBrowsingHistoriesRequest)
+      returns (RemoveBrowsingHistoriesResponse) {}
+  rpc ClearBrowsingHistories(ClearBrowsingHistoriesRequest)
+      returns (ClearBrowsingHistoriesResponse) {}
+}
+
+// 收藏相关请求与响应
+message ListFavoritesRequest {
+  int64 user_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+message Favorite {
+  int64 id = 1;
+  int64 user_id = 2;
+  int64 goods_id = 3;
+  int64 category_id = 4;
+  string remark = 5;
+  double price_when_fav = 6;
+  bool notification = 7;
+  int64 created_at = 8;
+}
+
+message ListFavoritesResponse {
+  repeated Favorite favorites = 1;
+  int64 total = 2;
+}
+
+message AddFavoriteRequest {
+  int64 user_id = 1;
+  int64 goods_id = 2;
+  int64 category_id = 3;
+  string remark = 4;
+}
+
+message AddFavoriteResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message RemoveFavoriteRequest {
+  int64 id = 1;
+  int64 user_id = 2; // 用于权限检查
+}
+
+message RemoveFavoriteResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message IsFavoriteRequest {
+  int64 user_id = 1;
+  int64 goods_id = 2;
+}
+
+message IsFavoriteResponse { bool is_favorite = 1; }
+
+message SetPriceNotificationRequest {
+  int64 id = 1;
+  int64 user_id = 2; // 用于权限检查
+  bool notify = 3;
+}
+
+message SetPriceNotificationResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+// 地址相关请求与响应
+message Address {
+  int64 id = 1;
+  int64 user_id = 2;
+  string province = 3;
+  string city = 4;
+  string district = 5;
+  string address = 6;
+  string signer_name = 7;
+  string signer_mobile = 8;
+  bool is_default = 9;
+  string label = 10;
+  string postcode = 11;
+  int32 usage_count = 12;
+  int64 last_used_at = 13;
+  int64 created_at = 14;
+}
+
+message ListAddressesRequest { int64 user_id = 1; }
+
+message ListAddressesResponse { repeated Address addresses = 1; }
+
+message GetAddressRequest {
+  int64 id = 1;
+  int64 user_id = 2; // 用于权限检查
+}
+
+message GetAddressResponse { Address address = 1; }
+
+message AddAddressRequest { Address address = 1; }
+
+message AddAddressResponse {
+  int64 id = 1;
+  bool success = 2;
+  string message = 3;
+}
+
+message UpdateAddressRequest { Address address = 1; }
+
+message UpdateAddressResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message DeleteAddressRequest {
+  int64 id = 1;
+  int64 user_id = 2; // 用于权限检查
+}
+
+message DeleteAddressResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message SetDefaultAddressRequest {
+  int64 user_id = 1;
+  int64 address_id = 2;
+}
+
+message SetDefaultAddressResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message GetDefaultAddressRequest { int64 user_id = 1; }
+
+message GetDefaultAddressResponse {
+  Address address = 1;
+  bool has_default = 2; // 是否有默认地址
+}
+
+// 反馈相关请求与响应
+message Feedback {
+  int64 id = 1;
+  int64 user_id = 2;
+  int32 feedback_type = 3;
+  string subject = 4;
+  string content = 5;
+  repeated string file_urls = 6;
+  int32 status = 7;
+  string order_sn = 8;
+  string admin_reply = 9;
+  int64 reply_at = 10;
+  int64 created_at = 11;
+}
+
+message ListFeedbacksRequest {
+  int64 user_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+message ListFeedbacksResponse {
+  repeated Feedback feedbacks = 1;
+  int64 total = 2;
+}
+
+message GetFeedbackRequest {
+  int64 id = 1;
+  int64 user_id = 2; // 用于权限检查
+}
+
+message GetFeedbackResponse { Feedback feedback = 1; }
+
+message SubmitFeedbackRequest { Feedback feedback = 1; }
+
+message SubmitFeedbackResponse {
+  int64 id = 1;
+  bool success = 2;
+  string message = 3;
+}
+
+message UpdateFeedbackRequest { Feedback feedback = 1; }
+
+message UpdateFeedbackResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message DeleteFeedbackRequest {
+  int64 id = 1;
+  int64 user_id = 2; // 用于权限检查
+}
+
+message DeleteFeedbackResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+// 浏览历史相关请求与响应
+message BrowsingHistory {
+  int64 id = 1;
+  int64 user_id = 2;
+  int64 goods_id = 3;
+  string source = 4;
+  int32 stay_time = 5;
+  int64 created_at = 6;
+}
+
+message GetBrowsingHistoriesRequest {
+  int64 user_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+message GetBrowsingHistoriesResponse {
+  repeated BrowsingHistory histories = 1;
+  int64 total = 2;
+}
+
+message AddBrowsingHistoryRequest {
+  int64 user_id = 1;
+  int64 goods_id = 2;
+  string source = 3;
+  int32 stay_time = 4;
+}
+
+message AddBrowsingHistoryResponse { bool success = 1; }
+
+message RemoveBrowsingHistoriesRequest {
+  int64 user_id = 1;
+  repeated int64 ids = 2;
+}
+
+message RemoveBrowsingHistoriesResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message ClearBrowsingHistoriesRequest { int64 user_id = 1; }
+
+message ClearBrowsingHistoriesResponse {
+  bool success = 1;
+  string message = 2;
+}

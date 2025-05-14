@@ -1,0 +1,230 @@
+syntax = "proto3";
+package product;
+
+option go_package = "shop/backend/product/api/proto";
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+// ProductService 商品服务接口
+service ProductService {
+  // 商品管理接口
+  rpc GoodsList(GoodsFilterRequest) returns (GoodsListResponse) {}
+  rpc BatchGetGoods(BatchGoodsIdInfo) returns (GoodsListResponse) {}
+  rpc GetGoodsDetail(GoodInfoRequest) returns (GoodsInfoResponse) {}
+  rpc CreateGoods(CreateGoodsInfo) returns (GoodsInfoResponse) {}
+  rpc UpdateGoods(CreateGoodsInfo) returns (google.protobuf.Empty) {}
+  rpc DeleteGoods(DeleteGoodsInfo) returns (google.protobuf.Empty) {}
+
+  // 分类管理接口
+  rpc GetAllCategorysList(google.protobuf.Empty)
+      returns (CategoryListResponse) {}
+  rpc GetSubCategory(CategoryListRequest) returns (SubCategoryListResponse) {}
+  rpc CreateCategory(CategoryInfoRequest) returns (CategoryInfoResponse) {}
+  rpc DeleteCategory(DeleteCategoryInfo) returns (google.protobuf.Empty) {}
+  rpc UpdateCategory(CategoryInfoRequest) returns (google.protobuf.Empty) {}
+
+  // 品牌管理接口
+  rpc BrandList(BrandFilterRequest) returns (BrandListResponse) {}
+  rpc CreateBrand(BrandInfoRequest) returns (BrandInfoResponse) {}
+  rpc DeleteBrand(BrandInfoRequest) returns (google.protobuf.Empty) {}
+  rpc UpdateBrand(BrandInfoRequest) returns (google.protobuf.Empty) {}
+
+  // 轮播图管理接口
+  rpc BannerList(google.protobuf.Empty) returns (BannerListResponse) {}
+  rpc CreateBanner(BannerRequest) returns (BannerResponse) {}
+  rpc DeleteBanner(BannerRequest) returns (google.protobuf.Empty) {}
+  rpc UpdateBanner(BannerRequest) returns (google.protobuf.Empty) {}
+
+  // 商品搜索接口
+  rpc SearchGoods(GoodsSearchRequest) returns (GoodsSearchResponse) {}
+}
+
+// 商品信息
+message GoodsInfoResponse {
+  int64 id = 1;
+  string name = 2;
+  string goods_sn = 3;
+  int32 stocks = 4;
+  float market_price = 5;
+  float shop_price = 6;
+  string goods_brief = 7;
+  string goods_desc = 8;
+  bool ship_free = 9;
+  repeated string images = 10;
+  repeated string desc_images = 11;
+  string goods_front_image = 12;
+  bool is_new = 13;
+  bool is_hot = 14;
+  bool on_sale = 15;
+  int64 category_id = 16;
+  int64 brand_id = 17;
+  google.protobuf.Timestamp created_at = 18;
+  CategoryBriefInfoResponse category = 19;
+  BrandInfoResponse brand = 20;
+}
+
+// 分类简要信息
+message CategoryBriefInfoResponse {
+  int64 id = 1;
+  string name = 2;
+}
+
+// 品牌信息
+message BrandInfoResponse {
+  int64 id = 1;
+  string name = 2;
+  string logo = 3;
+}
+
+// 商品过滤请求
+message GoodsFilterRequest {
+  int64 price_min = 1;
+  int64 price_max = 2;
+  bool is_hot = 3;
+  bool is_new = 4;
+  bool is_tab = 5;
+  int64 category_id = 6;
+  int64 brand_id = 7;
+  string keywords = 8;
+  int32 page = 9;
+  int32 page_size = 10;
+  string order_by = 11; // 排序字段:排序方式，如：price:asc
+}
+
+// 商品列表响应
+message GoodsListResponse {
+  int64 total = 1;
+  repeated GoodsInfoResponse goods = 2;
+}
+
+// 批量获取商品信息
+message BatchGoodsIdInfo { repeated int64 id = 1; }
+
+// 商品详情请求
+message GoodInfoRequest { int64 id = 1; }
+
+// 创建商品信息
+message CreateGoodsInfo {
+  int64 id = 1;
+  string name = 2;
+  string goods_sn = 3;
+  int32 stocks = 4;
+  float market_price = 5;
+  float shop_price = 6;
+  string goods_brief = 7;
+  string goods_desc = 8;
+  bool ship_free = 9;
+  repeated string images = 10;
+  repeated string desc_images = 11;
+  string goods_front_image = 12;
+  bool is_new = 13;
+  bool is_hot = 14;
+  bool on_sale = 15;
+  int64 category_id = 16;
+  int64 brand_id = 17;
+}
+
+// 删除商品请求
+message DeleteGoodsInfo { int64 id = 1; }
+
+// 分类列表请求
+message CategoryListRequest {
+  int64 id = 1;
+  int32 level = 2;
+}
+
+// 分类列表响应
+message CategoryListResponse {
+  int64 total = 1;
+  repeated CategoryInfoResponse data = 2;
+}
+
+// 子分类列表响应
+message SubCategoryListResponse {
+  int64 total = 1;
+  CategoryInfoResponse info = 2;
+  repeated CategoryInfoResponse sub_categories = 3;
+}
+
+// 分类信息
+message CategoryInfoResponse {
+  int64 id = 1;
+  string name = 2;
+  int64 parent_category_id = 3;
+  int32 level = 4;
+  bool is_tab = 5;
+}
+
+// 分类信息请求
+message CategoryInfoRequest {
+  int64 id = 1;
+  string name = 2;
+  int64 parent_category_id = 3;
+  int32 level = 4;
+  bool is_tab = 5;
+}
+
+// 删除分类请求
+message DeleteCategoryInfo { int64 id = 1; }
+
+// 品牌过滤请求
+message BrandFilterRequest {
+  int32 page = 1;
+  int32 page_size = 2;
+}
+
+// 品牌列表响应
+message BrandListResponse {
+  int64 total = 1;
+  repeated BrandInfoResponse data = 2;
+}
+
+// 品牌请求
+message BrandInfoRequest {
+  int64 id = 1;
+  string name = 2;
+  string logo = 3;
+}
+
+// 轮播图请求
+message BannerRequest {
+  int64 id = 1;
+  int32 index = 2;
+  string image = 3;
+  string url = 4;
+}
+
+// 轮播图响应
+message BannerResponse {
+  int64 id = 1;
+  int32 index = 2;
+  string image = 3;
+  string url = 4;
+}
+
+// 轮播图列表响应
+message BannerListResponse {
+  int64 total = 1;
+  repeated BannerResponse data = 2;
+}
+
+// 商品搜索请求
+message GoodsSearchRequest {
+  string keywords = 1;
+  int64 category_id = 2;
+  int64 brand_id = 3;
+  float price_min = 4;
+  float price_max = 5;
+  bool is_new = 6;
+  bool is_hot = 7;
+  int32 page = 8;
+  int32 page_size = 9;
+  string order_by = 10;
+}
+
+// 商品搜索响应
+message GoodsSearchResponse {
+  int64 total = 1;
+  repeated GoodsInfoResponse goods = 2;
+}

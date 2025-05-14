@@ -1,0 +1,36 @@
+server:
+  name: product-service
+  host: 127.0.0.1
+  port: 50053
+
+mysql:
+  host: 127.0.0.1
+  port: 3306
+  user: root
+  password: password
+  database: shop_product
+
+redis:
+  host: 127.0.0.1
+  port: 6379
+  password: ""
+  db: 2
+
+elasticsearch:
+  addresses:
+    - http://127.0.0.1:9200
+  username: elastic
+  password: password
+
+consul:
+  address: 127.0.0.1:8500
+
+oss:
+  endpoint: http://oss-cn-hangzhou.aliyuncs.com
+  accessKey: your-access-key
+  secretKey: your-secret-key
+  bucket: shop-product
+  urlPrefix: https://shop-product.oss-cn-hangzhou.aliyuncs.com
+
+logLevel: debug
+logFile: "./logs/product-service.log"

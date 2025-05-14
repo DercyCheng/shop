@@ -1,0 +1,169 @@
+syntax = "proto3";
+
+package inventory;
+
+option go_package = "shop/backend/inventory/api/proto;inventory_proto";
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+// 库存服务
+service InventoryService {
+  // 基本库存管理
+  rpc SetInv(GoodsInvInfo) returns (google.protobuf.Empty);
+  rpc InvDetail(GoodsInvInfo) returns (GoodsInvInfo);
+  rpc BatchInvDetail(BatchGoodsInvInfo) returns (BatchGoodsInvInfo);
+  rpc AddStock(AddStockInfo) returns (google.protobuf.Empty);
+  rpc AdjustStock(AdjustStockInfo) returns (google.protobuf.Empty);
+  rpc GetInventoryHistory(InventoryHistoryRequest)
+      returns (InventoryHistoryResponse);
+
+  // 库存预定接口
+  rpc Lock(SellInfo) returns (LockResponse);
+  rpc Sell(SellInfo) returns (google.protobuf.Empty);
+  rpc Reback(SellInfo) returns (google.protobuf.Empty);
+  rpc GetReservationStatus(OrderSn) returns (ReservationStatus);
+
+  // 仓库管理接口
+  rpc CreateWarehouse(WarehouseInfo) returns (WarehouseInfo);
+  rpc UpdateWarehouse(WarehouseInfo) returns (google.protobuf.Empty);
+  rpc GetWarehouseList(WarehouseQuery) returns (WarehouseListResponse);
+  rpc GetWarehouseDetail(WarehouseID) returns (WarehouseInfo);
+  rpc DeleteWarehouse(WarehouseID) returns (google.protobuf.Empty);
+}
+
+// 商品库存信息
+message GoodsInvInfo {
+  int64 goods_id = 1;        // 商品ID
+  int32 stock = 2;           // 总库存
+  int32 lock_stock = 3;      // 锁定库存
+  int32 warehouse_id = 4;    // 仓库ID，可选
+  string operator = 5;       // 操作人
+  int32 alert_threshold = 6; // 警戒库存
+}
+
+// 批量商品库存信息
+message BatchGoodsInvInfo {
+  repeated GoodsInvInfo goods_list = 1; // 商品库存信息列表
+}
+
+// 添加库存信息
+message AddStockInfo {
+  int64 goods_id = 1; // 商品ID
+  int32 quantity = 2; // 增加数量
+  string remark = 3;  // 备注
+}
+
+// 调整库存信息
+message AdjustStockInfo {
+  int64 goods_id = 1;  // 商品ID
+  int32 stock = 2;     // 新库存
+  string operator = 3; // 操作人
+  string remark = 4;   // 备注
+}
+
+// 库存售卖信息
+message SellInfo {
+  string order_sn = 1;                   // 订单号
+  repeated GoodsSellInfo goods_list = 2; // 售卖商品列表
+  int32 timeout_seconds = 3;             // 超时时间（秒）
+}
+
+// 单个商品售卖信息
+message GoodsSellInfo {
+  int64 goods_id = 1;     // 商品ID
+  int32 quantity = 2;     // 数量
+  int32 warehouse_id = 3; // 仓库ID，默认为1
+}
+
+// 锁定响应
+message LockResponse {
+  bool success = 1;                     // 是否成功
+  string message = 2;                   // 消息
+  repeated LockFailItem fail_items = 3; // 失败项
+}
+
+// 锁定失败项
+message LockFailItem {
+  int64 goods_id = 1;  // 商品ID
+  int32 quantity = 2;  // 请求数量
+  int32 available = 3; // 可用数量
+  string reason = 4;   // 失败原因
+}
+
+// 订单号
+message OrderSn {
+  string order_sn = 1; // 订单号
+}
+
+// 预定状态
+message ReservationStatus {
+  enum Status {
+    UNKNOWN = 0;   // 未知
+    LOCKED = 1;    // 已锁定
+    REDUCED = 2;   // 已扣减
+    RETURNED = 3;  // 已归还
+    NOT_FOUND = 4; // 未找到
+  }
+  Status status = 1;                          // 状态
+  google.protobuf.Timestamp lock_time = 2;    // 锁定时间
+  google.protobuf.Timestamp confirm_time = 3; // 确认时间
+  repeated GoodsSellInfo goods_list = 4;      // 商品列表
+}
+
+// 仓库信息
+message WarehouseInfo {
+  int32 id = 1;                             // 仓库ID
+  string name = 2;                          // 仓库名称
+  string address = 3;                       // 仓库地址
+  string contact = 4;                       // 联系人
+  string phone = 5;                         // 联系电话
+  int32 status = 6;                         // 状态：1-正常，0-禁用
+  google.protobuf.Timestamp created_at = 7; // 创建时间
+  google.protobuf.Timestamp updated_at = 8; // 更新时间
+}
+
+// 仓库查询
+message WarehouseQuery {
+  int32 page = 1;      // 页码
+  int32 page_size = 2; // 每页数量
+  string keyword = 3;  // 关键词
+  int32 status = 4;    // 状态：1-正常，0-禁用，-1-全部
+}
+
+// 仓库列表响应
+message WarehouseListResponse {
+  int64 total = 1;                       // 总数
+  repeated WarehouseInfo warehouses = 2; // 仓库列表
+}
+
+// 仓库ID
+message WarehouseID {
+  int32 id = 1; // 仓库ID
+}
+
+// 库存历史记录查询请求
+message InventoryHistoryRequest {
+  int64 goods_id = 1;  // 商品ID
+  int32 page = 2;      // 页码
+  int32 page_size = 3; // 每页数量
+}
+
+// 库存历史记录响应
+message InventoryHistoryResponse {
+  int64 total = 1;                         // 总数
+  repeated InventoryHistoryItem items = 2; // 历史记录列表
+}
+
+// 库存历史记录项目
+message InventoryHistoryItem {
+  int64 id = 1;           // 记录ID
+  int64 goods_id = 2;     // 商品ID
+  int32 warehouse_id = 3; // 仓库ID
+  int32 quantity = 4;     // 变更数量（正数增加，负数减少）
+  string operation = 5; // 操作类型：lock, unlock, decrease, increase, adjust
+  string operator = 6;                      // 操作人
+  string order_sn = 7;                      // 相关订单号
+  string remark = 8;                        // 备注
+  google.protobuf.Timestamp created_at = 9; // 创建时间
+}

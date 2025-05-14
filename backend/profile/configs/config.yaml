@@ -1,0 +1,31 @@
+server:
+  name: profile-service
+  host: 127.0.0.1
+  port: 50052
+
+mysql:
+  host: 127.0.0.1
+  port: 3306
+  user: root
+  password: password
+  database: shop_profile
+
+redis:
+  host: 127.0.0.1
+  port: 6379
+  password: ""
+  db: 1
+
+consul:
+  address: 127.0.0.1:8500
+
+userService:
+  host: 127.0.0.1
+  port: 50051
+
+productService:
+  host: 127.0.0.1
+  port: 50053
+
+logLevel: debug
+logFile: "./logs/profile-service.log"
